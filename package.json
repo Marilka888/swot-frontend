@@ -1,19 +1,58 @@
 {
   "name": "swot-frontend",
-  "version": "0.0.0",
+  "version": "0.0.1",
+  "description": "Клиентское приложение для SWOT-анализа",
+  "productName": "SWOT анализ",
+  "author": "maria <marilka888@mail.ru>",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "lint": "eslint --ext .js,.vue ./",
+    "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "quasar dev",
+    "build": "quasar build"
   },
   "dependencies": {
-    "vue": "^3.5.13"
+    "@quasar/extras": "^1.16.4",
+    "@quasar/quasar-ui-qcalendar": "^4.0.0-beta.15",
+    "@toast-ui/editor": "^3.2.2",
+    "@toast-ui/editor-plugin-code-syntax-highlight": "^3.1.0",
+    "@types/prismjs": "^1.26.0",
+    "@vueuse/core": "^9.13.0",
+    "axios": "^1.2.1",
+    "chart.js": "^4.2.1",
+    "echarts": "^5.4.2",
+    "gh-pages": "^5.0.0",
+    "jquery": "^3.4.1",
+    "lottie-web": "^5.10.2",
+    "pages": "^0.0.16",
+    "pinia": "^2.0.33",
+    "prismjs": "^1.29.0",
+    "quasar": "^2.8.0",
+    "resize-observer-polyfill": "^1.5.1",
+    "ui": "^0.2.4",
+    "vue": "^3.4.18",
+    "vue-axios": "^2.1.4",
+    "vue-i18n": "^9.0.0",
+    "vue-router": "^4.0.12",
+    "vuedraggable": "^2.24.3",
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
-    "vite": "^6.2.1",
-    "vite-plugin-vue-devtools": "^7.7.2"
+    "@intlify/vite-plugin-vue-i18n": "^3.3.1",
+    "@quasar/app-vite": "^1.8.0",
+    "@quasar/quasar-app-extension-qcalendar": "^4.0.0-beta.16",
+    "autoprefixer": "^10.4.2",
+    "eslint": "^8.11.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "postcss": "^8.4.14",
+    "prettier": "^2.5.1",
+    "vite-plugin-checker": "^0.6.4"
+  },
+  "engines": {
+    "node": "^20 || ^18 || ^16",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
   }
 }
