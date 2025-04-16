@@ -115,151 +115,145 @@
         <div class="q-mt-md justify-end row">
           <q-btn label="Изменить альтернативы" class="q-mt-md done-button" flat/>
         </div>
+
+        <q-btn
+          label="Сохранить изменения"
+          icon="save"
+          color="primary"
+          class="q-mt-md"
+          @click="saveSummary"
+        />
+
+        <q-dialog v-model="editAltDialog">
+          <q-card style="min-width: 500px">
+            <q-card-section>
+              <div class="text-h6">Редактировать альтернативу</div>
+              <div>{{ selectedAlternative?.factor1 }} и {{ selectedAlternative?.factor2 }}</div>
+            </q-card-section>
+            <q-card-section>
+              <q-input v-model.number="selectedAlternative.d_minus" label="d-" type="number" />
+              <q-input v-model.number="selectedAlternative.d_plus" label="d+" type="number" class="q-mt-sm" />
+              <q-input v-model.number="selectedAlternative.d_star" label="d*" type="number" class="q-mt-sm" />
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Отмена" v-close-popup />
+              <q-btn flat label="Сохранить" color="primary" @click="saveAltEdit" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
+        <q-btn
+          icon="edit"
+          flat
+          round
+          color="primary"
+          @click="openAltEditDialog(alt)"
+        />
+
       </q-page>
     </q-page-container>
   </q-layout>
 </template>
 
 
-<script>
-import {ref} from 'vue';
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import axios from 'axios'
+import { useQuasar } from 'quasar'
+import { debounce } from 'quasar'
 
-export default {
-  setup() {
-    const strongFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятыйдержатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const weakFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const opportunityFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const threatFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const editDialog = ref(false);
-    const tab = ref('alternatives');
-    const editSlicesDialog = ref(false);
-    const activeSection = ref('');
-    const editableFactors = ref([]);
-    const sessionName = ref('Название сессии');
-    const percentageDialog = ref(false);
-    const selectedAlternative = ref(null);
-    const slices = ref([0.2, 0.5, 0.8]);
-    const factorNumbers = {
-      strong: ['0.212', '0.52', '0.663'],
-      weak: ['0.454', '0.685', '0.026'],
-      opportunity: ['7', '8', '9'],
-      threat: ['10', '11', '12'],
-    };
+const debouncedSave = debounce(() => saveSummary(), 500)
 
-    const alternatives = ref([
-      {
-        d_minus: 0.24, d_plus: 0.17, d_star: 0.28,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null
-      },
-      {
-        d_minus: 0.30, d_plus: 0.22, d_star: 0.25,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null
-      },
-      {
-        d_minus: 0.18, d_plus: 0.12, d_star: 0.27,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null
-      },
-      {
-        d_minus: 0.30, d_plus: 0.22, d_star: 0.25,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null
-      },
-      {
-        d_minus: 0.30, d_plus: 0.22, d_star: 0.25,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null
-      }
-    ]);
-    const getFactorNumber = (factor, section, index) => {
-      return factorNumbers[section][index];
-    };
+const sessionId = route.params.sessionId || 1
 
-    const openEditDialog = (section) => {
-      activeSection.value = section;
-      editDialog.value = true;
-      editableFactors.value =
-        section === 'strong'
-          ? [...strongFactors.value]
-          : section === 'weak'
-            ? [...weakFactors.value]
-            : section === 'opportunity'
-              ? [...opportunityFactors.value]
-              : [...threatFactors.value];
-    };
+const editAltDialog = ref(false)
+const selectedAlternative = ref(null)
 
-    const validateSlice = (val) => (val >= 0.1 && val <= 0.9) || 'Срез должен быть от 0.1 до 0.9';
-    const percentageRule = (val) => (val >= 0 && val <= 100) || 'Процент должен быть от 0 до 100';
+const openAltEditDialog = (alt) => {
+  selectedAlternative.value = JSON.parse(JSON.stringify(alt)) // клон
+  editAltDialog.value = true
+}
 
-    const saveSlices = () => {
-      console.log('Срезы сохранены:', slices.value);
-      editSlicesDialog.value = false;
-    };
+const saveAltEdit = () => {
+  const index = alternatives.value.findIndex(a =>
+    a.factor1 === selectedAlternative.value.factor1 &&
+    a.factor2 === selectedAlternative.value.factor2
+  )
+  if (index !== -1) {
+    alternatives.value[index] = { ...selectedAlternative.value }
+    saveSummary() // автообновление
+  }
+  editAltDialog.value = false
+}
 
-    const openPercentageDialog = (alternative) => {
-      selectedAlternative.value = alternative;
-      percentageDialog.value = true;
-    };
 
-    const savePercentage = () => {
-      console.log('Сохранены проценты для:', selectedAlternative.value);
-      percentageDialog.value = false;
-    };
+const sessionName = ref('')
+const strongFactors = ref([])
+const weakFactors = ref([])
+const opportunityFactors = ref([])
+const threatFactors = ref([])
+const alternatives = ref([])
+const factorNumbers = ref({
+  strong: [],
+  weak: [],
+  opportunity: [],
+  threat: []
+})
 
-    return {
-      tab,
-      strongFactors,
-      weakFactors,
-      opportunityFactors,
-      threatFactors,
-      editDialog,
-      activeSection,
-      editableFactors,
-      sessionName,
-      openEditDialog,
-      getFactorNumber,
-      editSlicesDialog,
-      slices,
-      percentageDialog,
-      selectedAlternative,
-      alternatives,
-      validateSlice,
-      percentageRule,
-      saveSlices,
-      openPercentageDialog,
-      savePercentage,
-    };
-  },
-};
+const getFactorNumber = (factor, section, index) => {
+  return factorNumbers.value[section]?.[index] ?? '-'
+}
+
+const loadSummary = async () => {
+  try {
+    const { data } = await axios.get(`/api/session/${sessionId}/summary`)
+    sessionName.value = data.sessionName
+    strongFactors.value = data.factors.strong
+    weakFactors.value = data.factors.weak
+    opportunityFactors.value = data.factors.opportunity
+    threatFactors.value = data.factors.threat
+    factorNumbers.value = data.factorNumbers
+    alternatives.value = data.alternatives
+  } catch (err) {
+    console.error('Ошибка при загрузке summary:', err)
+  }
+}
+
+const loading = ref(true)
+
+const saveSummary = async () => {
+  const payload = {
+    sessionName: sessionName.value,
+    factors: {
+      strong: strongFactors.value,
+      weak: weakFactors.value,
+      opportunity: opportunityFactors.value,
+      threat: threatFactors.value
+    },
+    factorNumbers: factorNumbers.value,
+    alternatives: alternatives.value
+  }
+
+  try {
+    await axios.post(`/api/session/${sessionId}/summary`, payload)
+    $q.notify({ type: 'positive', message: 'Изменения сохранены' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: 'Ошибка при сохранении' })
+  }
+}
+
+
+
+onMounted(async () => {
+  loading.value = true
+  await loadSummary()
+  loading.value = false
+})
+
+
 </script>
+
 
 <style>
 .q-toolbar {

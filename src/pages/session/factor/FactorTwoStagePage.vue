@@ -7,7 +7,7 @@
         <div class="q-tabs-container">
           <q-tabs v-model="tab" class="bg-grey-3 text-black non-selectable-tabs tab-text-size" dense>
             <q-tab name="factors" label="ФАКТОРЫ"/>
-            <q-tab name="strength" label="СИЛА ФАКТОРОВ"/>
+            <q-tab name="strength" label="ВЕСА ФАКТОРОВ"/>
             <q-tab name="alternatives" label="АЛЬТЕРНАТИВЫ"/>
             <q-tab name="results" label="РЕЗУЛЬТАТЫ"/>
           </q-tabs>
@@ -53,59 +53,73 @@
 </template>
 
 <script>
-import {ref} from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 
 export default {
   setup() {
-    const strongFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const weakFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const opportunityFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const threatFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const editDialog = ref(false);
     const tab = ref('factors');
+    const sessionName = ref('Название сессии');
+
+    const strongFactors = ref([]);
+    const weakFactors = ref([]);
+    const opportunityFactors = ref([]);
+    const threatFactors = ref([]);
+
+    const editDialog = ref(false);
     const activeSection = ref('');
     const editableFactors = ref([]);
-    const sessionName = ref('Название сессии');
+
+    const fetchFactors = async () => {
+      try {
+        const res = await axios.get('/api/factors'); // change to your actual backend route
+        strongFactors.value = res.data.strong || [];
+        weakFactors.value = res.data.weak || [];
+        opportunityFactors.value = res.data.opportunity || [];
+        threatFactors.value = res.data.threat || [];
+      } catch (error) {
+        console.error('Ошибка при получении факторов:', error);
+      }
+    };
 
     const openEditDialog = (section) => {
       activeSection.value = section;
       editDialog.value = true;
-      editableFactors.value = section === 'strong' ? [...strongFactors.value] :
-        section === 'weak' ? [...weakFactors.value] :
-          section === 'opportunity' ? [...opportunityFactors.value] :
-            [...threatFactors.value];
+      editableFactors.value =
+        section === 'strong' ? [...strongFactors.value] :
+          section === 'weak' ? [...weakFactors.value] :
+            section === 'opportunity' ? [...opportunityFactors.value] :
+              [...threatFactors.value];
     };
 
-    const saveFactors = () => {
-      if (activeSection.value === 'strong') strongFactors.value = [...editableFactors.value];
-      else if (activeSection.value === 'weak') weakFactors.value = [...editableFactors.value];
-      else if (activeSection.value === 'opportunity') opportunityFactors.value = [...editableFactors.value];
-      else threatFactors.value = [...editableFactors.value];
-      editDialog.value = false;
+    const saveFactors = async () => {
+      try {
+        await axios.put(`/api/factors/${activeSection.value}`, {
+          factors: editableFactors.value,
+        });
+
+        if (activeSection.value === 'strong') strongFactors.value = [...editableFactors.value];
+        else if (activeSection.value === 'weak') weakFactors.value = [...editableFactors.value];
+        else if (activeSection.value === 'opportunity') opportunityFactors.value = [...editableFactors.value];
+        else threatFactors.value = [...editableFactors.value];
+
+        editDialog.value = false;
+      } catch (error) {
+        console.error('Ошибка при сохранении факторов:', error);
+      }
     };
 
     const deleteFactor = (index) => {
       editableFactors.value.splice(index, 1);
     };
 
+    onMounted(() => {
+      fetchFactors();
+    });
+
     return {
       tab,
+      sessionName,
       strongFactors,
       weakFactors,
       opportunityFactors,
@@ -113,12 +127,11 @@ export default {
       editDialog,
       activeSection,
       editableFactors,
-      sessionName,
       openEditDialog,
       saveFactors,
       deleteFactor,
     };
-  },
+  }
 };
 </script>
 

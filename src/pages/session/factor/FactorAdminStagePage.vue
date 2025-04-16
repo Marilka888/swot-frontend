@@ -7,7 +7,7 @@
         <div class="q-tabs-container">
           <q-tabs v-model="tab" class="bg-grey-3 text-black non-selectable-tabs tab-text-size" dense>
             <q-tab name="factors" label="ФАКТОРЫ"/>
-            <q-tab name="strength" label="СИЛА ФАКТОРОВ"/>
+            <q-tab name="strength" label="ВЕСА ФАКТОРОВ"/>
             <q-tab name="alternatives" label="АЛЬТЕРНАТИВЫ"/>
             <q-tab name="results" label="РЕЗУЛЬТАТЫ"/>
           </q-tabs>
@@ -18,7 +18,7 @@
             <div class="header">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -29,7 +29,7 @@
             <div class="header">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -40,7 +40,7 @@
             <div class="header">Возможности</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -51,7 +51,7 @@
             <div class="header">Угрозы</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -64,22 +64,18 @@
           <q-btn label="ГОТОВО" :to="'/session/weights'" class="done-button"/>
         </div>
 
-        <!-- Edit Factor Dialog -->
         <q-dialog v-model="editDialog">
           <q-card class="edit-dialog-card">
             <q-card-section class="text-center">
               <div class="text-h5">Изменение факторов</div>
-              <div class="text-subtitle1" v-if="activeSection === 'strong'">Сильные стороны</div>
-              <div class="text-subtitle1" v-else-if="activeSection === 'weak'">Слабые стороны</div>
-              <div class="text-subtitle1" v-else-if="activeSection === 'opportunity'">Возможности</div>
-              <div class="text-subtitle1" v-else-if="activeSection === 'threat'">Угрозы</div>
+              <div class="text-subtitle1">{{ sectionTitles[activeSection] }}</div>
             </q-card-section>
 
             <q-card-section>
               <div v-for="(factor, index) in editableFactors" :key="index" class="q-mb-sm">
                 <q-item bordered rounded class="factor-item">
                   <q-item-section style="width: 80%; overflow-wrap: anywhere;">
-                    <q-input v-model="editableFactors[index]"
+                    <q-input v-model="editableFactors[index].name"
                              :rules="[ val => val !== null && val !== '' || 'Пожалуйста, введите значение' ]"
                              borderless dense/>
                   </q-item-section>
@@ -92,7 +88,7 @@
               </div>
             </q-card-section>
 
-            <q-card-actions align="around">  <!--  Изменено: align="around" -->
+            <q-card-actions align="around">
               <q-btn class="toast-button" label="Отмена" @click="editDialog = false"/>
               <q-btn class="toast-button" color="info" label="Изменить" @click="saveFactors"/>
             </q-card-actions>
@@ -104,59 +100,69 @@
 </template>
 
 <script>
-import {ref} from 'vue';
+import { ref, onMounted, computed } from 'vue'
+import axios from 'axios'
 
 export default {
   setup() {
-    const strongFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const weakFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const opportunityFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const threatFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const editDialog = ref(false);
-    const tab = ref('factors');
-    const activeSection = ref('');
-    const editableFactors = ref([]);
-    const sessionName = ref('Название сессии');
+    const tab = ref('factors')
+    const sessionName = ref('Название сессии')
+    const factors = ref([])
+    const editDialog = ref(false)
+    const activeSection = ref('')
+    const editableFactors = ref([])
+
+    const sectionTitles = {
+      strong: 'Сильные стороны',
+      weak: 'Слабые стороны',
+      opportunity: 'Возможности',
+      threat: 'Угрозы'
+    }
+
+    const fetchFactors = async () => {
+      try {
+        const { data } = await axios.get('http://localhost:8080/api/v1/factors')
+        factors.value = data || []
+      } catch (err) {
+        console.error('Ошибка при загрузке факторов:', err)
+      }
+    }
+
+    const filteredByType = (type) => computed(() => factors.value.filter(f => f.type === type))
+
+    const strongFactors = filteredByType('strong')
+    const weakFactors = filteredByType('weak')
+    const opportunityFactors = filteredByType('opportunity')
+    const threatFactors = filteredByType('threat')
 
     const openEditDialog = (section) => {
-      activeSection.value = section;
-      editDialog.value = true;
-      editableFactors.value = section === 'strong' ? [...strongFactors.value] :
-        section === 'weak' ? [...weakFactors.value] :
-          section === 'opportunity' ? [...opportunityFactors.value] :
-            [...threatFactors.value];
-    };
+      activeSection.value = section
+      editDialog.value = true
+      editableFactors.value = factors.value.filter(f => f.type === section).map(f => ({ ...f }))
+    }
 
-    const saveFactors = () => {
-      if (activeSection.value === 'strong') strongFactors.value = [...editableFactors.value];
-      else if (activeSection.value === 'weak') weakFactors.value = [...editableFactors.value];
-      else if (activeSection.value === 'opportunity') opportunityFactors.value = [...editableFactors.value];
-      else threatFactors.value = [...editableFactors.value];
-      editDialog.value = false;
-    };
+    const saveFactors = async () => {
+      try {
+        await axios.post(`http://localhost:8080/api/v1/factors/${activeSection.value}`, editableFactors.value)
+        await fetchFactors()
+        editDialog.value = false
+      } catch (err) {
+        console.error('Ошибка при сохранении факторов:', err)
+      }
+    }
 
     const deleteFactor = (index) => {
-      editableFactors.value.splice(index, 1);
-    };
+      editableFactors.value.splice(index, 1)
+    }
+
+    onMounted(() => {
+      fetchFactors()
+    })
 
     return {
       tab,
+      sessionName,
+      sectionTitles,
       strongFactors,
       weakFactors,
       opportunityFactors,
@@ -164,13 +170,12 @@ export default {
       editDialog,
       activeSection,
       editableFactors,
-      sessionName,
       openEditDialog,
       saveFactors,
-      deleteFactor,
-    };
-  },
-};
+      deleteFactor
+    }
+  }
+}
 </script>
 
 <style>

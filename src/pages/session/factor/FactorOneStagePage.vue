@@ -11,7 +11,7 @@
             dense
           >
             <q-tab name="factors" label="ФАКТОРЫ" />
-            <q-tab name="strength" label="СИЛА ФАКТОРОВ" />
+            <q-tab name="strength" label="ВЕСА ФАКТОРОВ" />
             <q-tab name="alternatives" label="АЛЬТЕРНАТИВЫ" />
             <q-tab name="results" label="РЕЗУЛЬТАТЫ" />
           </q-tabs>
@@ -25,7 +25,7 @@
             <div class="header">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -35,28 +35,12 @@
                 @click="openAddDialog('strong')"
               />
             </div>
-            <q-dialog v-model="addDialog" persistent>
-              <q-card class="add-dialog">
-                <q-card-section>
-                  <div class="text-h6">Создание фактора</div>
-                </q-card-section>
-
-                <q-card-section>
-                  <q-input v-model="newFactorName" label="Название фактора" />
-                </q-card-section>
-
-                <q-card-actions align="center">
-                  <q-btn class="swot-button" label="Отмена" @click="addDialog = false"/>
-                  <q-btn class="swot-button" label="Создать" @click="addFactor" />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
           </div>
           <div class="cell weak bg-light-grey" ref="weakCell">
             <div class="header">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -68,28 +52,12 @@
                 @click="openAddDialog('weak')"
               />
             </div>
-            <q-dialog v-model="addDialog" persistent>
-              <q-card class="add-dialog">
-                <q-card-section>
-                  <div class="text-h6">Создание фактора</div>
-                </q-card-section>
-
-                <q-card-section>
-                  <q-input v-model="newFactorName" label="Название фактора" />
-                </q-card-section>
-
-                <q-card-actions align="center">
-                  <q-btn class="swot-button" label="Отмена" @click="addDialog = false"/>
-                  <q-btn class="swot-button" label="Создать" @click="addFactor" />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
           </div>
           <div class="cell opportunities bg-light-grey" ref="opportunityCell">
             <div class="header">Возможности</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -101,29 +69,12 @@
                 @click="openAddDialog('opportunity')"
               />
             </div>
-            <q-dialog v-model="addDialog" persistent>
-              <q-card class="add-dialog">
-                <q-card-section>
-                  <div class="text-h6">Создание фактора</div>
-                </q-card-section>
-
-                <q-card-section>
-                  <q-input v-model="newFactorName" label="Название фактора" />
-                </q-card-section>
-
-                <q-card-actions align="center">
-                  <q-btn class="swot-button" label="Отмена" @click="addDialog = false"/>
-                  <q-btn class="swot-button" label="Создать" @click="addFactor" />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
           </div>
           <div class="cell threats bg-dark-red" ref="threatCell">
             <div class="header">Угрозы</div>
             <ul class="centered-list q-mt-xs">
-
               <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
-                {{ factor }}
+                {{ factor.name }}
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
@@ -133,29 +84,29 @@
                 @click="openAddDialog('threat')"
               />
             </div>
-            <q-dialog v-model="addDialog" persistent>
-              <q-card class="add-dialog">
-                <q-card-section>
-                  <div class="text-h6">Создание фактора</div>
-                </q-card-section>
-
-                <q-card-section>
-                  <q-input v-model="newFactorName"
-                           :rules="[ val => val !== null && val !== '' || 'Пожалуйста, введите значение' ]"
-                           label="Название фактора" />
-                </q-card-section>
-
-                <q-card-actions align="around">  <!--  Изменено: align="around" -->
-                  <q-btn class="toast-button" label="Отмена" @click="addDialog = false"/>
-                  <q-btn class="toast-button" color="info" label="Создать"  @click="addFactor" />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
-
           </div>
         </div>
 
-        <div class="q-mt-md"> <!-- Контейнер для кнопки "Готово" -->
+        <q-dialog v-model="addDialog" persistent>
+          <q-card class="add-dialog">
+            <q-card-section>
+              <div class="text-h6">Создание фактора</div>
+            </q-card-section>
+
+            <q-card-section>
+              <q-input v-model="newFactorName"
+                       :rules="[ val => val !== null && val !== '' || 'Пожалуйста, введите значение' ]"
+                       label="Название фактора" />
+            </q-card-section>
+
+            <q-card-actions align="around">
+              <q-btn class="toast-button" label="Отмена" @click="addDialog = false"/>
+              <q-btn class="toast-button" color="info" label="Создать" @click="addFactor" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
+        <div class="q-mt-md">
           <q-btn label="ГОТОВО" :to="'/session/factors/correct'" class="done-button"/>
         </div>
       </q-page>
@@ -164,6 +115,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
@@ -172,39 +125,65 @@ export default {
       activeSection: '',
       tab: 'factors',
       sessionName: 'Название сессии',
-      gridWidth: 600,
-      strongFactors: [
-        'Квалифицированная команда разработчиков',
-        'Фактор, который написал пятый держатель котлеты',
-        'Фактор, который написал первый держатель котлеты',
-      ],
-      weakFactors: [
-        'Квалифицированная команда разработчиков',
-        'Фактор, который написал пятый держатель котлеты',
-        'Фактор, который написал первый держатель котлеты',
-      ],
-      opportunityFactors: [
-        'Квалифицированная команда разработчиков',
-        'Фактор, который написал пятый держатель котлеты',
-        'Фактор, который написал первый держатель котлеты',
-      ],
-      threatFactors: [
-        'Квалифицированная команда разработчиков',
-        'Фактор, который написал пятый держатель котлеты',
-        'Фактор, который написал первый держатель котлеты',
-      ],
+      factors: []
     };
   },
+  computed: {
+    strongFactors() {
+      return this.factors.filter(f => f.type === 'strong');
+    },
+    weakFactors() {
+      return this.factors.filter(f => f.type === 'weak');
+    },
+    opportunityFactors() {
+      return this.factors.filter(f => f.type === 'opportunity');
+    },
+    threatFactors() {
+      return this.factors.filter(f => f.type === 'threat');
+    }
+  },
   mounted() {
-    this.adjustCellHeights(); // Вызываем метод при монтировании компонента
-    window.addEventListener('resize', this.adjustCellHeights); // Вызываем при изменении размера окна
+    this.fetchFactors();
+    this.adjustCellHeights();
+    window.addEventListener('resize', this.adjustCellHeights);
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.adjustCellHeights);
   },
   methods: {
+    async fetchFactors() {
+      try {
+        const api = `http://localhost:8080/api/v1/factors`;
+        const response = await axios.get(api);
+        this.factors = response.data || [];
+        await this.$nextTick();
+        this.adjustCellHeights();
+      } catch (error) {
+        console.error('Ошибка при загрузке факторов:', error);
+      }
+    },
+    async addFactor() {
+      const newFactor = {
+        name: this.newFactorName,
+        type: this.activeSection
+      };
+
+      try {
+        const api = `http://localhost:8080/api/v1/factors`;
+        await axios.post(api, newFactor);
+        this.addDialog = false;
+        await this.fetchFactors();
+      } catch (error) {
+        console.error('Ошибка при добавлении фактора:', error);
+      }
+    },
+    openAddDialog(section) {
+      this.activeSection = section;
+      this.addDialog = true;
+      this.newFactorName = '';
+    },
     adjustCellHeights() {
-      this.$nextTick(() => {  // Ensure the DOM is updated before calculating heights
+      this.$nextTick(() => {
         const strongHeight = this.$refs.strongCell.offsetHeight;
         const weakHeight = this.$refs.weakCell.offsetHeight;
         const opportunityHeight = this.$refs.opportunityCell.offsetHeight;
@@ -219,32 +198,10 @@ export default {
         this.$refs.threatCell.style.height = maxOpportunityThreatHeight + 'px';
       });
     },
-    openAddDialog(section) {
-      this.activeSection = section;
-      this.addDialog = true;
-      this.newFactorName = '';
-    },
-    addFactor() {
-      switch (this.activeSection) {
-        case 'strong':
-          this.strongFactors.push(this.newFactorName);
-          break;
-        case 'weak':
-          this.weakFactors.push(this.newFactorName);
-          break;
-        case 'opportunity':
-          this.opportunityFactors.push(this.newFactorName);
-          break;
-        case 'threat':
-          this.threatFactors.push(this.newFactorName);
-          break;
-      }
-      this.addDialog = false;
-      this.adjustCellHeights(); // Пересчитываем высоты после добавления фактора
-    },
-  },
+  }
 };
 </script>
+
 
 <style>
 .q-toolbar {

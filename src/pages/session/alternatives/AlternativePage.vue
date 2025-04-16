@@ -13,29 +13,20 @@
             dense
           >
             <q-tab name="factors" label="ФАКТОРЫ" />
-            <q-tab name="strength" label="СИЛА ФАКТОРОВ" />
+            <q-tab name="strength" label="ВЕСА ФАКТОРОВ" />
             <q-tab name="alternatives" label="АЛЬТЕРНАТИВЫ" />
             <q-tab name="results" label="РЕЗУЛЬТАТЫ" />
           </q-tabs>
         </div>
 
-        <div
-          class="grid-analysis q-mt-md"
-          style="align-items: center; justify-content: center"
-        >
+        <div class="grid-analysis q-mt-md" style="align-items: center; justify-content: center">
           <div class="cell strong bg-light-red" ref="strongCell">
             <div class="header">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in strongFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'strong', index)
-                    }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -43,16 +34,10 @@
           <div class="cell weak bg-light-grey" ref="weakCell">
             <div class="header">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in weakFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'weak', index)
-                    }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -60,16 +45,10 @@
           <div class="cell opportunities bg-light-grey" ref="opportunityCell">
             <div class="header">Возможности</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in opportunityFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'opportunity', index)
-                    }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -77,16 +56,10 @@
           <div class="cell threats bg-dark-red" ref="threatCell">
             <div class="header">Угрозы</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in threatFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'threat', index)
-                    }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -95,82 +68,25 @@
 
         <div class="alternatives q-mt-lg">
           <div class="text-h6">АЛЬТЕРНАТИВЫ</div>
+          <div v-if="alternatives.length === 0">Альтернативы не найдены</div>
           <div
             class="alternative"
             v-for="(alt, index) in alternatives"
             :key="index"
           >
-            <div class="alt-metricss">
-              <span><strong>d- = {{ alt.d_minus }}</strong></span>
-              <span><strong>d+ = {{ alt.d_plus }}</strong></span>
-              <span><strong>d* = {{ alt.d_star }}</strong></span>
+            <div class="alt-id">A{{ index + 1 }}</div>
+            <div class="alt-data">
+              <div class="alt-numbers">
+                <div>d+ = {{ alt.dplus?.toFixed(3) }}</div>
+                <div>d- = {{ alt.dminus?.toFixed(3) }}</div>
+                <div>d* = {{ alt.closeness?.toFixed(3) }}</div>
+              </div>
+              <div class="alt-description">
+                {{ alt.internalFactor }} и {{ alt.externalFactor }}
+              </div>
             </div>
-            <div class="alt-textt">
-              {{ alt.factor1 }} и
-              {{ alt.factor2 }}
-            </div>
-            <q-btn class="done-button" icon="add" flat color="white" @click="openPercentageDialog(alt)"/>
           </div>
         </div>
-
-        <div class="q-mt-md">
-          <q-btn label="Изменить срезы" class="q-mr-md" color="grey" flat @click="editSlicesDialog = true"/>
-          <q-btn
-            label="ГОТОВО"
-            :to="'/session/alternatives/all'"
-            class="done-button"
-          />
-        </div>
-
-        <q-dialog v-model="editSlicesDialog">
-          <q-card style="width: 400px">
-            <q-card-section>
-              <div class="text-h6">Изменить срезы</div>
-            </q-card-section>
-            <q-card-section>
-              <q-input v-model.number="slices[0]" type="number" label="Срез 1 (0.1 - 0.9)" :rules="[validateSlice]" />
-              <q-input v-model.number="slices[1]" type="number" label="Срез 2 (0.1 - 0.9)" :rules="[validateSlice]" />
-              <q-input v-model.number="slices[2]" type="number" label="Срез 3 (0.1 - 0.9)" :rules="[validateSlice]" />
-            </q-card-section>
-            <q-card-actions align="right">
-              <q-btn flat label="Отмена" color="primary" v-close-popup />
-              <q-btn flat label="Сохранить" color="primary" @click="saveSlices" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
-
-        <q-dialog v-model="percentageDialog">
-          <q-card style="width: 500px">
-            <q-card-section>
-              <div class="text-h6" style="font-weight: bold;">
-                Ввод процентов для альтернативы:
-              </div>
-              <div class="text-h6">
-                {{ selectedAlternative ? selectedAlternative.description : '' }}
-              </div>
-            </q-card-section>
-
-            <q-card-section v-if="selectedAlternative">
-              <q-input
-                v-model.number="selectedAlternative.factor1Percentage"
-                type="number"
-                :label="`Процент для ${selectedAlternative.factor1}`"
-                :rules="[percentageRule]"
-              />
-              <q-input
-                v-model.number="selectedAlternative.factor2Percentage"
-                type="number"
-                :label="`Процент для ${selectedAlternative.factor2}`"
-                :rules="[percentageRule]"
-              />
-            </q-card-section>
-
-            <q-card-actions align="right">
-              <q-btn flat label="Отмена" color="primary" v-close-popup />
-              <q-btn flat label="Сохранить" color="primary" @click="savePercentage" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
 
       </q-page>
     </q-page-container>
@@ -178,126 +94,93 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 
 export default {
   setup() {
-    const strongFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятыйдержатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const weakFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const opportunityFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const threatFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const editDialog = ref(false);
-    const tab = ref('alternatives');
-    const editSlicesDialog = ref(false);
-    const activeSection = ref('');
-    const editableFactors = ref([]);
-    const sessionName = ref('Название сессии');
-    const percentageDialog = ref(false);
-    const selectedAlternative = ref(null);
-    const slices = ref([0.2, 0.5, 0.8]);
-    const factorNumbers = {
-      strong: ['0.212', '0.52', '0.663'],
-      weak: ['0.454', '0.685', '0.026'],
-      opportunity: ['7', '8', '9'],
-      threat: ['10', '11', '12'],
-    };
+    const sessionName = ref('Название сессии')
+    const tab = ref('alternatives')
 
-    const alternatives = ref([
-      { d_minus: 0.24, d_plus: 0.17, d_star: 0.28,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null },
-      { d_minus: 0.30, d_plus: 0.22, d_star: 0.25,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null },
-      { d_minus: 0.18, d_plus: 0.12, d_star: 0.27,
-        factor1: 'Квалифицированная команда разработчиков', // Добавьте факторы
-        factor2: 'Фактор из внешней среды',
-        factor1Percentage: null,
-        factor2Percentage: null },
-    ]);
-    const getFactorNumber = (factor, section, index) => {
-      return factorNumbers[section][index];
-    };
+    const strongFactors = ref([])
+    const weakFactors = ref([])
+    const opportunityFactors = ref([])
+    const threatFactors = ref([])
+    const alternatives = ref([])
 
-    const openEditDialog = (section) => {
-      activeSection.value = section;
-      editDialog.value = true;
-      editableFactors.value =
-        section === 'strong'
-          ? [...strongFactors.value]
-          : section === 'weak'
-            ? [...weakFactors.value]
-            : section === 'opportunity'
-              ? [...opportunityFactors.value]
-              : [...threatFactors.value];
-    };
+    const fetchFactors = async () => {
+      try {
+        const { data } = await axios.get('http://localhost:8080/api/v1/factors')
+        strongFactors.value = data.filter(f => f.type === 'strong')
+        weakFactors.value = data.filter(f => f.type === 'weak')
+        opportunityFactors.value = data.filter(f => f.type === 'opportunity')
+        threatFactors.value = data.filter(f => f.type === 'threat')
+      } catch (err) {
+        console.error('Ошибка загрузки факторов:', err)
+      }
+    }
 
-    const validateSlice = (val) => (val >= 0.1 && val <= 0.9) || 'Срез должен быть от 0.1 до 0.9';
-    const percentageRule = (val) => (val >= 0 && val <= 100) || 'Процент должен быть от 0 до 100';
+    const fetchAlternatives = async () => {
+      try {
+        const { data } = await axios.get('http://localhost:8080/api/session/alternatives')
+        alternatives.value = data
+        console.info('Альтернативы:', data)
+      } catch (err) {
+        console.error('Ошибка загрузки альтернатив:', err)
+      }
+    }
 
-    const saveSlices = () => {
-      console.log('Срезы сохранены:', slices.value);
-      editSlicesDialog.value = false;
-    };
+    const getFactorNumber = (factor) => {
+      return factor.massCenter ? factor.massCenter.toFixed(2) : '-'
+    }
 
-    const openPercentageDialog = (alternative) => {
-      selectedAlternative.value = alternative;
-      percentageDialog.value = true;
-    };
-
-    const savePercentage = () => {
-      console.log('Сохранены проценты для:', selectedAlternative.value);
-      percentageDialog.value = false;
-    };
+    onMounted(async () => {
+      await fetchFactors()
+      await fetchAlternatives()
+    })
 
     return {
+      sessionName,
       tab,
       strongFactors,
       weakFactors,
       opportunityFactors,
       threatFactors,
-      editDialog,
-      activeSection,
-      editableFactors,
-      sessionName,
-      openEditDialog,
       getFactorNumber,
-      editSlicesDialog,
-      slices,
-      percentageDialog,
-      selectedAlternative,
-      alternatives,
-      validateSlice,
-      percentageRule,
-      saveSlices,
-      openPercentageDialog,
-      savePercentage,
-    };
-  },
-};
+      alternatives
+    }
+  }
+}
 </script>
 
-<style>
+<style scoped>
+
+.alt-id {
+  width: 40px;
+  font-weight: bold;
+  text-align: left;
+  margin-right: 10px;
+}
+
+.alt-data {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+.alt-numbers {
+  display: flex;
+  gap: 20px;
+  font-size: 0.9em;
+}
+
+.alt-description {
+  margin-top: 6px;
+  font-size: 1em;
+  font-weight: 500;
+}
+
 .q-toolbar {
   width: 100%;
   display: flex;

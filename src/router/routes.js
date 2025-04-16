@@ -3,6 +3,8 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
+      { path: '', component: () => import('pages/auth/LoginPage.vue') },
+      { path: 'admin', component: () => import('pages/auth/AdminPage.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
       {path: '', component: () => import('pages/session/factor/FactorOneStagePage.vue')},
       {path: 'alternative', component: () => import('pages/session/alternatives/AlternativePage.vue')},
     ]

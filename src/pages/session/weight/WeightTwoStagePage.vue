@@ -9,7 +9,7 @@
                   class="bg-grey-3 text-black non-selectable-tabs tab-text-size"
                   dense>
             <q-tab name="factors" label="ФАКТОРЫ"/>
-            <q-tab name="strength" label="СИЛА ФАКТОРОВ"/>
+            <q-tab name="strength" label="ВЕСА ФАКТОРОВ"/>
             <q-tab name="alternatives" label="АЛЬТЕРНАТИВЫ"/>
             <q-tab name="results" label="РЕЗУЛЬТАТЫ"/>
           </q-tabs>
@@ -22,7 +22,7 @@
               <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
                   <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'strong', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -33,7 +33,7 @@
               <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
                   <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'weak', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -44,7 +44,7 @@
               <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
                   <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'opportunity', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -55,7 +55,7 @@
               <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
                   <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'threat', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
             </ul>
@@ -71,86 +71,69 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 
 export default {
   setup() {
-    const strongFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const weakFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const opportunityFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const threatFactors = ref([
-      'Квалифицированная команда разработчиков',
-      'Фактор, который написал пятый держатель котлеты',
-      'Фактор, который написал первый держатель котлеты',
-    ]);
-    const editDialog = ref(false);
-    const tab = ref('strength');
-    const activeSection = ref('');
-    const editableFactors = ref([]);
-    const sessionName = ref('Название сессии');
+    const sessionName = ref('Название сессии')
+    const tab = ref('strength')
 
-    const factorNumbers = {
-      strong: ['0.212', '0.52', '0.663'],
-      weak: ['0.454', '0.685', '0.026'],
-      opportunity: ['7', '8', '9'],
-      threat: ['10', '11', '12'],
-    };
+    const strongFactors = ref([])
+    const weakFactors = ref([])
+    const opportunityFactors = ref([])
+    const threatFactors = ref([])
+
+    const factorNumbers = ref({
+      strong: [],
+      weak: [],
+      opportunity: [],
+      threat: []
+    })
+
+    const fetchFactors = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/v1/factors')
+        const all = response.data
+        strongFactors.value = all.filter(f => f.type === 'strong')
+        weakFactors.value = all.filter(f => f.type === 'weak')
+        opportunityFactors.value = all.filter(f => f.type === 'opportunity')
+        threatFactors.value = all.filter(f => f.type === 'threat')
+      } catch (err) {
+        console.error('Ошибка загрузки факторов:', err)
+      }
+    }
+
+    const fetchFactorNumbers = async () => {
+      try {
+        const {data} = await axios.get('/api/factors/numbers')
+        factorNumbers.value = data
+      } catch (err) {
+        console.error('Ошибка при загрузке номеров факторов:', err)
+      }
+    }
 
     const getFactorNumber = (factor, section, index) => {
-      return factorNumbers[section][index];
-    };
+      return factorNumbers.value[section]?.[index] || ''
+    }
 
-    const openEditDialog = (section) => {
-      activeSection.value = section;
-      editDialog.value = true;
-      editableFactors.value = section === 'strong' ? [...strongFactors.value] :
-        section === 'weak' ? [...weakFactors.value] :
-          section === 'opportunity' ? [...opportunityFactors.value] :
-            [...threatFactors.value];
-    };
-
-    const saveFactors = () => {
-      if (activeSection.value === 'strong') strongFactors.value = [...editableFactors.value];
-      else if (activeSection.value === 'weak') weakFactors.value = [...editableFactors.value];
-      else if (activeSection.value === 'opportunity') opportunityFactors.value = [...editableFactors.value];
-      else threatFactors.value = [...editableFactors.value];
-      editDialog.value = false;
-    };
-
-    const deleteFactor = (index) => {
-      editableFactors.value.splice(index, 1);
-    };
+    onMounted(async () => {
+      await Promise.all([fetchFactors(), fetchFactorNumbers()])
+    })
 
     return {
       tab,
+      sessionName,
       strongFactors,
       weakFactors,
       opportunityFactors,
       threatFactors,
-      editDialog,
-      activeSection,
-      editableFactors,
-      sessionName,
-      openEditDialog,
-      saveFactors,
-      deleteFactor,
       getFactorNumber
-    };
-  },
-};
+    }
+  }
+}
 </script>
+
 <style>
 .q-toolbar {
   width: 100%;
