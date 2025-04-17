@@ -15,7 +15,7 @@
 
         <div class="grid-analysis q-mt-md" style="align-items: center; justify-content: center">
           <div class="cell strong bg-dark-blue" ref="strongCell">
-            <div class="header">Сильные стороны</div>
+            <div class="header with-circle text-green">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -27,7 +27,7 @@
           </div>
 
           <div class="cell weak bg-light-grey" ref="weakCell">
-            <div class="header">Слабые стороны</div>
+            <div class="header with-circle text-pink">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -39,7 +39,7 @@
           </div>
 
           <div class="cell opportunities bg-light-grey" ref="opportunityCell">
-            <div class="header">Возможности</div>
+            <div class="header with-circle text-green">Возможности</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -51,7 +51,7 @@
           </div>
 
           <div class="cell threats bg-dark-red" ref="threatCell">
-            <div class="header">Угрозы</div>
+            <div class="header with-circle text-pink">Угрозы</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -81,12 +81,12 @@
 
                   <div class="q-mb-sm">
                     <div class="text-caption">Крайние значения</div>
-                    <q-range v-model="factor.range1" :min="0" :max="10" step="0.00001" color="red" label-always />
+                    <q-range v-model="factor.range1" :min="0" :max="10" step="0.001" color="red" label-always />
                   </div>
 
                   <div>
                     <div class="text-caption">Наиболее возможные значения</div>
-                    <q-range v-model="factor.range2" :min="0" :max="10" step="0.00001" color="blue" label-always />
+                    <q-range v-model="factor.range2" :min="0" :max="10" step="0.001" color="blue" label-always />
                   </div>
 
                   <q-separator class="q-my-sm" />
@@ -156,19 +156,23 @@ const openWeightDialog = (type) => {
     threat: threatFactors.value
   }[type]
 
+  const safe = (val, fallback = 0) => {
+    const parsed = parseFloat(val)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
   currentFactors.value = source.map(f => {
-    const rawMin = parseFloat(f.weightMin)
-    const rawMax = parseFloat(f.weightMax)
-    const rawAvg1 = parseFloat(f.weightAvg1)
-    const rawAvg2 = parseFloat(f.weightAvg2)
+    const min = safe(f.weightMin, 0)
+    const max = safe(f.weightMax, 10)
+    let avg1 = safe(f.weightAvg1, (min + max) / 2 - 1)
+    let avg2 = safe(f.weightAvg2, (min + max) / 2 + 1)
 
-    const min = Number.isFinite(rawMin) ? rawMin : 2
-    const max = Number.isFinite(rawMax) ? rawMax : 8
-    let avg1 = Number.isFinite(rawAvg1) ? rawAvg1 : (min + max) / 2 - 1
-    let avg2 = Number.isFinite(rawAvg2) ? rawAvg2 : (min + max) / 2 + 1
+    // fallback mid if avg1 or avg2 are invalid or zero
+    if (!Number.isFinite(avg1)) avg1 = min
+    if (!Number.isFinite(avg2)) avg2 = max
 
-    avg1 = Math.min(Math.max(avg1, min), max)
-    avg2 = Math.min(Math.max(avg2, min), max)
+    avg1 = Math.max(min, Math.min(avg1, max))
+    avg2 = Math.max(min, Math.min(avg2, max))
     if (avg1 > avg2) avg1 = avg2
 
     return {
@@ -181,15 +185,9 @@ const openWeightDialog = (type) => {
   showWeightDialog.value = true
 }
 
-// const limitRange = (factor) => {
-//   if (factor.range2[0] < factor.range1[0]) factor.range2[0] = factor.range1[0]
-//   if (factor.range2[1] > factor.range1[1]) factor.range2[1] = factor.range1[1]
-//   if (factor.range2[0] > factor.range2[1]) factor.range2[0] = factor.range2[1]
-// }
-
 const saveWeights = async () => {
   try {
-    currentFactors.value = currentFactors.value.map(f => ({
+    const payload = currentFactors.value.map(f => ({
       ...f,
       id: f.id,
       weightMin: f.range1[0],
@@ -198,7 +196,7 @@ const saveWeights = async () => {
       weightAvg2: f.range2[1]
     }))
 
-    await axios.post(`http://localhost:8080/api/v1/factors/${currentFactorType.value}`, currentFactors.value)
+    await axios.post(`http://localhost:8080/api/v1/factors/${currentFactorType.value}`, payload)
     showWeightDialog.value = false
     await fetchFactors()
   } catch (err) {

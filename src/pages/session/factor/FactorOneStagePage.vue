@@ -22,7 +22,7 @@
           style="align-items: center; justify-content: center"
         >
           <div class="cell strong bg-dark-blue" ref="strongCell">
-            <div class="header">Сильные стороны</div>
+            <div class="header with-circle text-green">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -37,7 +37,7 @@
             </div>
           </div>
           <div class="cell weak bg-light-grey" ref="weakCell">
-            <div class="header">Слабые стороны</div>
+            <div class="header with-circle text-pink">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -54,7 +54,7 @@
             </div>
           </div>
           <div class="cell opportunities bg-light-grey" ref="opportunityCell">
-            <div class="header">Возможности</div>
+            <div class="header with-circle text-green">Возможности</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -71,7 +71,7 @@
             </div>
           </div>
           <div class="cell threats bg-dark-red" ref="threatCell">
-            <div class="header">Угрозы</div>
+            <div class="header with-circle text-pink">Угрозы</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
                 {{ factor.name }}
@@ -264,6 +264,23 @@ export default {
 .bg-dark-red {
   background: #02486c;
   color: white;
+}
+.with-circle::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.text-green::before {
+  background-color: #4CAF50; /* зелёный */
+}
+
+.text-pink::before {
+  background-color: #e86d5d; /* красный */
 }
 
 .bg-light-grey {
