@@ -156,38 +156,40 @@ const openWeightDialog = (type) => {
     threat: threatFactors.value
   }[type]
 
-  const safe = (val, fallback = 0) => {
-    const parsed = parseFloat(val)
-    return Number.isFinite(parsed) ? parsed : fallback
-  }
-
   currentFactors.value = source.map(f => {
-    const min = safe(f.weightMin, 0)
-    const max = safe(f.weightMax, 10)
-    let avg1 = safe(f.weightAvg1, (min + max) / 2 - 1)
-    let avg2 = safe(f.weightAvg2, (min + max) / 2 + 1)
+    const rawMin = parseFloat(f.weightMin)
+    const rawMax = parseFloat(f.weightMax)
+    const rawAvg1 = parseFloat(f.weightAvg1)
+    const rawAvg2 = parseFloat(f.weightAvg2)
 
-    // fallback mid if avg1 or avg2 are invalid or zero
-    if (!Number.isFinite(avg1)) avg1 = min
-    if (!Number.isFinite(avg2)) avg2 = max
+    const min = Number.isFinite(rawMin) ? rawMin : 2
+    const max = Number.isFinite(rawMax) ? rawMax : 8
+    let avg1 = Number.isFinite(rawAvg1) ? rawAvg1 : (min + max) / 2 - 1
+    let avg2 = Number.isFinite(rawAvg2) ? rawAvg2 : (min + max) / 2 + 1
 
-    avg1 = Math.max(min, Math.min(avg1, max))
-    avg2 = Math.max(min, Math.min(avg2, max))
+    avg1 = Math.min(Math.max(avg1, min), max)
+    avg2 = Math.min(Math.max(avg2, min), max)
     if (avg1 > avg2) avg1 = avg2
 
     return {
       ...f,
-      range1: [min, max],
-      range2: [avg1, avg2]
+      range1: [rawMin, rawMax],
+      range2: [rawAvg1, rawAvg2]
     }
   })
 
   showWeightDialog.value = true
 }
 
+// const limitRange = (factor) => {
+//   if (factor.range2[0] < factor.range1[0]) factor.range2[0] = factor.range1[0]
+//   if (factor.range2[1] > factor.range1[1]) factor.range2[1] = factor.range1[1]
+//   if (factor.range2[0] > factor.range2[1]) factor.range2[0] = factor.range2[1]
+// }
+
 const saveWeights = async () => {
   try {
-    const payload = currentFactors.value.map(f => ({
+    currentFactors.value = currentFactors.value.map(f => ({
       ...f,
       id: f.id,
       weightMin: f.range1[0],
@@ -196,7 +198,7 @@ const saveWeights = async () => {
       weightAvg2: f.range2[1]
     }))
 
-    await axios.post(`http://localhost:8080/api/v1/factors/${currentFactorType.value}`, payload)
+    await axios.post(`http://localhost:8080/api/v1/factors/${currentFactorType.value}`, currentFactors.value)
     showWeightDialog.value = false
     await fetchFactors()
   } catch (err) {

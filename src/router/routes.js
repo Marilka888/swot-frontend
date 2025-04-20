@@ -3,10 +3,26 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/auth/LoginPage.vue') },
+      { path: '', component: () => import('pages/history/HistoryPage.vue') },
+      // { path: '', component: () => import('pages/auth/LoginPage.vue') },
       { path: 'admin', component: () => import('pages/auth/AdminPage.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
       {path: '', component: () => import('pages/session/factor/FactorOneStagePage.vue')},
       {path: 'alternative', component: () => import('pages/session/alternatives/AlternativePage.vue')},
+    ]
+  },
+  {
+    path: '/users',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/auth/UserPage.vue') },
+    ]
+  },
+  {
+    path: '/history',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/history/HistoryPage.vue') },
+      { path: ':sessionId', component: () => import('pages/history/SessionPage.vue') }
     ]
   },
   {
@@ -39,10 +55,8 @@ const routes = [
     component: () => import('layouts/MainLayout.vue'),
     children: [
       {path: ':sessionId', component: () => import('pages/history/SessionPage.vue'), meta: {requiresAuth: true}},
-      {path: 'all', component: () => import('pages/history/AllSessionPage.vue'), meta: {requiresAuth: true}},
-
       {path: '', component: () => import('pages/session/alternatives/AlternativePage.vue')},
-      {path: 'all', component: () => import('pages/session/alternatives/WeightTwoStagePage.vue')},
+      {path: 'version/:versionId', component: () => import('pages/session/alternatives/WeightTwoStagePage.vue')},
     ]
   },
   // {

@@ -4,8 +4,10 @@
       <div class="q-px-xl">
       <q-toolbar class="bg-8 text-white q-my-xs">
         <q-btn flat label="СЕССИИ"
+               :to="`/`"
                style="font-family: 'Montserrat Alternates', serif; font-weight: 500; font-size: 20px"/>
         <q-btn flat label="СТЕЙКХОЛДЕРЫ"
+               :to="`/users`"
                style="font-family: 'Montserrat Alternates', serif; font-weight: 500; font-size: 20px"/>
         <q-space/>
         <div class="q-mr-lg" style="font-weight: 500; font-size: 20px">Компания "Роги и ноги"</div>
