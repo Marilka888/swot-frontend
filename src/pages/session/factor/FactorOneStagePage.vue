@@ -153,8 +153,14 @@ export default {
   methods: {
     async fetchFactors() {
       try {
-        const api = `http://localhost:8080/api/v1/factors`;
-        const response = await axios.get(api);
+        const sessionId = localStorage.getItem('sessionId')
+        const versionId = localStorage.getItem('versionId')
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        const response = await axios.get( `http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`,   {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
         this.factors = response.data || [];
         await this.$nextTick();
         this.adjustCellHeights();
@@ -169,8 +175,12 @@ export default {
       };
 
       try {
-        const api = `http://localhost:8080/api/v1/factors`;
-        await axios.post(api, newFactor);
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        await axios.post( `http://localhost:8080/api/v1/factors`, newFactor,   {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
         this.addDialog = false;
         await this.fetchFactors();
       } catch (error) {

@@ -81,12 +81,26 @@
 
                   <div class="q-mb-sm">
                     <div class="text-caption">Крайние значения</div>
-                    <q-range v-model="factor.range1" :min="0" :max="10" step="0.001" color="red" label-always />
+                    <q-range
+                      v-model="factor.range1"
+                      :min="0"
+                      :max="1"
+                      :step="0.001"
+                      color="red"
+                      label-always
+                    />
                   </div>
 
                   <div>
                     <div class="text-caption">Наиболее возможные значения</div>
-                    <q-range v-model="factor.range2" :min="0" :max="10" step="0.001" color="blue" label-always />
+                    <q-range
+                      v-model="factor.range2"
+                      :min="0"
+                      :max="1"
+                      :step="0.001"
+                      color="blue"
+                      label-always
+                    />
                   </div>
 
                   <q-separator class="q-my-sm" />
@@ -100,6 +114,7 @@
             </q-card-actions>
           </q-card>
         </q-dialog>
+
       </q-page>
     </q-page-container>
   </q-layout>
@@ -129,7 +144,12 @@ const threatCell = ref(null)
 
 const fetchFactors = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/v1/factors')
+    const token = localStorage.getItem('token') // ← токен сохраняется после логина
+    const response = await axios.get('http://localhost:8080/api/v1/factors',{
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     const all = response.data
     strongFactors.value = all.filter(f => f.type === 'strong')
     weakFactors.value = all.filter(f => f.type === 'weak')
@@ -139,6 +159,8 @@ const fetchFactors = async () => {
     console.error('Ошибка загрузки факторов:', err)
   }
 }
+
+import { toRaw } from 'vue'
 
 const openWeightDialog = (type) => {
   currentFactorType.value = type
@@ -157,24 +179,23 @@ const openWeightDialog = (type) => {
   }[type]
 
   currentFactors.value = source.map(f => {
-    const rawMin = parseFloat(f.weightMin)
-    const rawMax = parseFloat(f.weightMax)
-    const rawAvg1 = parseFloat(f.weightAvg1)
-    const rawAvg2 = parseFloat(f.weightAvg2)
+    const r1 = toRaw(f.range1 || {})
+    const r2 = toRaw(f.range2 || {})
 
-    const min = Number.isFinite(rawMin) ? rawMin : 2
-    const max = Number.isFinite(rawMax) ? rawMax : 8
-    let avg1 = Number.isFinite(rawAvg1) ? rawAvg1 : (min + max) / 2 - 1
-    let avg2 = Number.isFinite(rawAvg2) ? rawAvg2 : (min + max) / 2 + 1
+    const range1 = {
+      min : Number.isFinite(+r1.min) ? +r1.min : 0,
+      max : Number.isFinite(+r1.max) ? +r1.max : 1
+    }
 
-    avg1 = Math.min(Math.max(avg1, min), max)
-    avg2 = Math.min(Math.max(avg2, min), max)
-    if (avg1 > avg2) avg1 = avg2
+    const range2 = {
+      min : Number.isFinite(+r2.min) ? +r2.min : 0,
+      max : Number.isFinite(+r2.max) ? +r2.max : 1
+    }
 
     return {
       ...f,
-      range1: [rawMin, rawMax],
-      range2: [rawAvg1, rawAvg2]
+      range1,
+      range2
     }
   })
 

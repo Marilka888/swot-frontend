@@ -207,7 +207,12 @@ const getFactorNumber = (factor, section, index) => {
 
 const loadSummary = async () => {
   try {
-    const { data } = await axios.get(`/api/session/${sessionId}/summary`)
+    const token = localStorage.getItem('token') // ← токен сохраняется после логина
+    const { data } = await axios.get('http://localhost:8080/api/session/${sessionId}/summary', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     sessionName.value = data.sessionName
     strongFactors.value = data.factors.strong
     weakFactors.value = data.factors.weak
@@ -236,7 +241,12 @@ const saveSummary = async () => {
   }
 
   try {
-    await axios.post(`/api/session/${sessionId}/summary`, payload)
+    const token = localStorage.getItem('token') // ← токен сохраняется после логина
+    await axios.post(`http://localhost:8080/api/session/${sessionId}/summary`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     $q.notify({ type: 'positive', message: 'Изменения сохранены' })
   } catch (err) {
     $q.notify({ type: 'negative', message: 'Ошибка при сохранении' })

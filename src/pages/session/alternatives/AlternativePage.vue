@@ -20,6 +20,7 @@
         </div>
 
         <div class="grid-analysis q-mt-md" style="align-items: center; justify-content: center">
+          <!-- ФАКТОРЫ -->
           <div class="cell strong bg-light-red" ref="strongCell">
             <div class="header with-circle text-green">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
@@ -66,13 +67,32 @@
           </div>
         </div>
 
+        <!-- КНОПКИ ЗАВЕРШЕНИЯ И ПЕРЕСЧЁТА -->
+        <div class="q-mt-md row q-gutter-md">
+          <q-btn label="РЕЗУЛЬТАТЫ" class="done-button" @click="finishSession" />
+          <q-btn
+            v-if="showSensitivityButton"
+            label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
+            class="done-button"
+            color="warning"
+            @click="openSensitivityDialog"
+          />
+          <q-btn v-if="Object.keys(revealMap).length > 0" label="ПЕРЕСЧЁТ D*" color="info" class="done-button info" @click="recalculateAlternatives,
+      showSensitivityButton,
+      isSimilarAlternative,
+      alternativeDifference" />
+        </div>
+
+        <!-- АЛЬТЕРНАТИВЫ -->
         <div class="alternatives q-mt-lg">
           <div class="text-h6">АЛЬТЕРНАТИВЫ</div>
-          <div v-if="alternatives.length === 0">Альтернативы не найдены</div>
+          <div v-if="sortedAlternatives.length === 0">Альтернативы не найдены</div>
+
           <div
             class="alternative"
-            v-for="(alt, index) in alternatives"
-            :key="index"
+            v-for="(alt, index) in sortedAlternatives"
+            :key="'alt-' + index"
+            :class="{ 'old-alt': showAll && isOldAlternative(alt) }"
           >
             <div class="alt-id">A{{ index + 1 }}</div>
             <div class="alt-data">
@@ -85,54 +105,225 @@
                 {{ alt.internalFactor }} и {{ alt.externalFactor }}
               </div>
             </div>
+            <q-btn flat dense icon="edit" @click="openAltDialog(alt)" class="q-ml-sm" />
           </div>
         </div>
 
+        <q-dialog v-model="showAltDialog">
+          <q-card style="width: 400px; max-width: 90%">
+            <q-card-section>
+              <div class="text-h6">Настройка альтернативы</div>
+              <div>{{ selectedAlt?.internalFactor }} и {{ selectedAlt?.externalFactor }}</div>
+            </q-card-section>
+            <q-card-section>
+              <q-input v-model.number="selectedAltReveal.internal" type="number" label="% раскрытия внутреннего фактора" :rules="[val => val >= 0 && val <= 100 || 'Допустимо от 0 до 100']" />
+              <q-input v-model.number="selectedAltReveal.external" type="number" label="% раскрытия внешнего фактора" :rules="[val => val >= 0 && val <= 100 || 'Допустимо от 0 до 100']" />
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Отмена" v-close-popup />
+              <q-btn flat label="Сохранить" color="primary" @click="saveRevealPercentages" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
+        <q-dialog v-model="showWarningDialog" persistent>
+          <q-card style="width: 400px; max-width: 90%;">
+            <q-card-section class="text-h6 text-negative">
+              Внимание: Низкая разность между альтернативами
+            </q-card-section>
+            <q-card-section>
+              Найдены альтернативы, у которых |d+ - d-| меньше {{ minDifferenceThreshold }}:
+              <ul>
+                <li v-for="(alt, i) in lowDifferenceAlternatives" :key="i">
+                  A{{ i + 1 }} ({{ alt.internalFactor }} и {{ alt.externalFactor }}) —
+                  Δ = {{ (Math.abs(alt.dplus - alt.dminus)).toFixed(3) }}
+                </li>
+              </ul>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="ОК" color="primary" v-close-popup />
+              <q-btn flat label="Анализ чувствительности" color="orange" @click="openSensitivity" />
+            </q-card-actions>
+          </q-card>
+
+        </q-dialog>
+
+        <div class="q-mt-md row justify-end" v-if="!showAll">
+          <q-btn label="ПОКАЗАТЬ ВСЕ" class="done-button" @click="handleDone" />
+        </div>
       </q-page>
     </q-page-container>
   </q-layout>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 export default {
   setup() {
     const sessionName = ref('Название сессии')
     const tab = ref('alternatives')
+    const router = useRouter()
 
     const strongFactors = ref([])
     const weakFactors = ref([])
     const opportunityFactors = ref([])
     const threatFactors = ref([])
     const alternatives = ref([])
+    const previousAlternatives = ref([])
+    const showAll = ref(false)
+    const showAltDialog = ref(false)
+    const selectedAlt = ref(null)
+    const selectedAltReveal = ref({ internal: 100, external: 100 })
+    const revealMap = ref({})
+
+    const alternativeDifference = ref(parseFloat(localStorage.getItem('alternativeDifference') || '0.15'))
+    const minDifferenceThreshold = alternativeDifference
+    const showWarningDialog = ref(false)
+    const lowDifferenceAlternatives = ref([])
+    const showSensitivityDialog = ref(false)
+    const sensitivityResults = ref([])
+
+    const openSensitivityDialog = () => {
+      sensitivityResults.value = []
+
+      for (let i = 0; i < sortedAlternatives.value.length; i++) {
+        for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
+          const diff = Math.abs(sortedAlternatives.value[i].closeness - sortedAlternatives.value[j].closeness)
+          if (diff < minDifferenceThreshold.value) {
+            sensitivityResults.value.push({
+              index1: i,
+              index2: j,
+              diff
+            })
+          }
+        }
+      }
+
+      showSensitivityDialog.value = true
+    }
+
+    const openSensitivity = () => {
+      showSensitivityDialog.value = true
+    }
 
     const fetchFactors = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:8080/api/v1/factors')
-        strongFactors.value = data.filter(f => f.type === 'strong')
-        weakFactors.value = data.filter(f => f.type === 'weak')
-        opportunityFactors.value = data.filter(f => f.type === 'opportunity')
-        threatFactors.value = data.filter(f => f.type === 'threat')
-      } catch (err) {
-        console.error('Ошибка загрузки факторов:', err)
-      }
+      const token = localStorage.getItem('token') // ← токен сохраняется после логина
+      const { data } = await axios.get('http://localhost:8080/api/v1/factors', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      strongFactors.value = data.filter(f => f.type === 'strong')
+      weakFactors.value = data.filter(f => f.type === 'weak')
+      opportunityFactors.value = data.filter(f => f.type === 'opportunity')
+      threatFactors.value = data.filter(f => f.type === 'threat')
     }
 
     const fetchAlternatives = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:8080/api/session/alternatives')
-        alternatives.value = data
-        console.info('Альтернативы:', data)
-      } catch (err) {
-        console.error('Ошибка загрузки альтернатив:', err)
+      const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
+      const token = localStorage.getItem('token') // ← токен сохраняется после логина
+      const { data } = await axios.post('http://localhost:8080/api/session/alternatives', selectedFromStorage, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      previousAlternatives.value = data
+    }
+
+    const handleDone = async () => {
+      const token = localStorage.getItem('token') // ← токен сохраняется после логина
+      const { data } = await axios.get('http://localhost:8080/api/session/alternatives', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      alternatives.value = data
+      showAll.value = true
+
+      // Сравнение d* между всеми парами альтернатив
+      const pairs = []
+      for (let i = 0; i < data.length; i++) {
+        for (let j = i + 1; j < data.length; j++) {
+          const d1 = data[i].closeness ?? 0
+          const d2 = data[j].closeness ?? 0
+          const diff = Math.abs(d1 - d2)
+          if (diff < minDifferenceThreshold.value) {
+            pairs.push([i, j])
+          }
+        }
+      }
+
+      lowDifferenceAlternatives.value = pairs
+
+      if (pairs.length > 0) {
+        showWarningDialog.value = true
       }
     }
 
-    const getFactorNumber = (factor) => {
-      return factor.massCenter ? factor.massCenter.toFixed(2) : '-'
+    const finishSession = async () => {
+      const token = localStorage.getItem('token') // ← токен сохраняется после логина
+      await axios.post('http://localhost:8080/v1/sessions/complete', null, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      router.push('/session/version')
     }
+
+    const openAltDialog = (alt) => {
+      selectedAlt.value = alt
+      const key = `${alt.internalFactor}|${alt.externalFactor}`
+      const prev = revealMap.value[key] || { internal: 100, external: 100 }
+      selectedAltReveal.value = { ...prev }
+      showAltDialog.value = true
+    }
+
+    const saveRevealPercentages = () => {
+      const alt = selectedAlt.value
+      const key = `${alt.internalFactor}|${alt.externalFactor}`
+      revealMap.value[key] = { ...selectedAltReveal.value }
+      showAltDialog.value = false
+    }
+
+    const recalculateAlternatives = async () => {
+        const revealArray = Object.entries(revealMap.value).map(([key, value]) => {
+          const [internal, external] = key.split('|')
+          return { internal, external, ...value }
+        })
+      const token = localStorage.getItem('token') // ← токен сохраняется после логина
+      const { data } = await axios.post('http://localhost:8080/api/session/recalculate', revealArray, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+        alternatives.value = data
+      }
+
+    const isOldAlternative = (alt) => {
+      return previousAlternatives.value.some(
+        old => old.internalFactor === alt.internalFactor && old.externalFactor === alt.externalFactor
+      )
+    }
+
+    const getFactorNumber = factor => factor.massCenter ? factor.massCenter.toFixed(2) : '-'
+
+    const combinedAlternatives = computed(() => showAll.value ? alternatives.value : previousAlternatives.value)
+    const sortedAlternatives = computed(() => [...combinedAlternatives.value].sort((a, b) => b.closeness - a.closeness))
+
+
+    const showSensitivityButton = computed(() => lowDifferenceAlternatives.value.length > 0)
+
+    const isSimilarAlternative = (alt) => {
+      return lowDifferenceAlternatives.value.some(([i, j]) => {
+        return [sortedAlternatives.value[i], sortedAlternatives.value[j]].some(a =>
+          a.internalFactor === alt.internalFactor && a.externalFactor === alt.externalFactor
+        )
+      })
+    }
+
 
     onMounted(async () => {
       await fetchFactors()
@@ -140,21 +331,46 @@ export default {
     })
 
     return {
-      sessionName,
+      openSensitivity, sessionName,
+      showSensitivityDialog,
+      sensitivityResults,
+      openSensitivityDialog,
       tab,
       strongFactors,
       weakFactors,
       opportunityFactors,
       threatFactors,
       getFactorNumber,
-      alternatives
+      alternatives,
+      handleDone,
+      showWarningDialog,
+      lowDifferenceAlternatives,
+      minDifferenceThreshold,
+      showAll,
+      previousAlternatives,
+      isOldAlternative,
+      combinedAlternatives,
+      sortedAlternatives,
+      finishSession,
+      openAltDialog,
+      saveRevealPercentages,
+      showAltDialog,
+      selectedAlt,
+      selectedAltReveal,
+      revealMap,
+      recalculateAlternatives,
+      showSensitivityButton,
+      isSimilarAlternative,
+      alternativeDifference
     }
   }
 }
 </script>
 
 <style scoped>
-
+.old-alt {
+  background-color: #fff4c2 !important;
+}
 .alt-id {
   width: 40px;
   font-weight: bold;

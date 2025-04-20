@@ -121,7 +121,12 @@ export default {
 
     const fetchFactors = async () => {
       try {
-        const { data } = await axios.get('http://localhost:8080/api/v1/factors')
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        const { data } = await axios.get(`http://localhost:8080/api/v1/factors`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
         factors.value = data || []
       } catch (err) {
         console.error('Ошибка при загрузке факторов:', err)
@@ -143,7 +148,12 @@ export default {
 
     const saveFactors = async () => {
       try {
-        await axios.post(`http://localhost:8080/api/v1/factors/${activeSection.value}`, editableFactors.value)
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        await axios.post( `http://localhost:8080/api/v1/factors/${activeSection.value}`, editableFactors.value, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
         await fetchFactors()
         editDialog.value = false
       } catch (err) {

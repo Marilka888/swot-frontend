@@ -20,8 +20,11 @@
             <div class="header with-circle text-green">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
+                <q-checkbox v-model="selectedFactors" :val="factor.id" class="q-mr-sm" />
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'strong', index) }}</span>
+                  <span class="number" style="font-weight: bold;">
+                    {{ getFactorNumber(factor, 'strong', index) }}
+                  </span>
                   <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
@@ -31,8 +34,11 @@
             <div class="header with-circle text-pink">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
+                <q-checkbox v-model="selectedFactors" :val="factor.id" class="q-mr-sm" />
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'weak', index) }}</span>
+                  <span class="number" style="font-weight: bold;">
+                    {{ getFactorNumber(factor, 'weak', index) }}
+                  </span>
                   <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
@@ -42,8 +48,11 @@
             <div class="header with-circle text-green">Возможности</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
+                <q-checkbox v-model="selectedFactors" :val="factor.id" class="q-mr-sm" />
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'opportunity', index) }}</span>
+                  <span class="number" style="font-weight: bold;">
+                    {{ getFactorNumber(factor, 'opportunity', index) }}
+                  </span>
                   <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
@@ -53,17 +62,19 @@
             <div class="header with-circle text-pink">Угрозы</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
+                <q-checkbox v-model="selectedFactors" :val="factor.id" class="q-mr-sm" />
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold;">{{ getFactorNumber(factor, 'threat', index) }}</span>
+                  <span class="number" style="font-weight: bold;">
+                    {{ getFactorNumber(factor, 'threat', index) }}
+                  </span>
                   <span>{{ factor.massCenter.toFixed(3) }} {{ factor.name }}</span>
                 </span>
               </li>
             </ul>
           </div>
         </div>
-
         <div class="q-mt-md">
-          <q-btn label="ГОТОВО" :to="'/session/alternatives'" class="done-button"/>
+          <q-btn label="ГОТОВО" class="done-button" @click="handleDone" />
         </div>
       </q-page>
     </q-page-container>
@@ -73,6 +84,7 @@
 <script>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 export default {
   setup() {
@@ -83,6 +95,7 @@ export default {
     const weakFactors = ref([])
     const opportunityFactors = ref([])
     const threatFactors = ref([])
+    const selectedFactors = ref([])
 
     const factorNumbers = ref({
       strong: [],
@@ -91,9 +104,16 @@ export default {
       threat: []
     })
 
+    const router = useRouter()
+
     const fetchFactors = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/v1/factors')
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        const response = await axios.get('http://localhost:8080/api/v1/factors',{
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
         const all = response.data
         strongFactors.value = all.filter(f => f.type === 'strong')
         weakFactors.value = all.filter(f => f.type === 'weak')
@@ -106,7 +126,12 @@ export default {
 
     const fetchFactorNumbers = async () => {
       try {
-        const {data} = await axios.get('/api/factors/numbers')
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        const { data } = await axios.get('http://localhost:8080/api/factors/numbers',{
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
         factorNumbers.value = data
       } catch (err) {
         console.error('Ошибка при загрузке номеров факторов:', err)
@@ -115,6 +140,29 @@ export default {
 
     const getFactorNumber = (factor, section, index) => {
       return factorNumbers.value[section]?.[index] || ''
+    }
+
+    const handleDone = async () => {
+      if (selectedFactors.value.length === 0) {
+        alert('Пожалуйста, выберите хотя бы один фактор.')
+        return
+      }
+
+      try {
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        await axios.post('http://localhost:8080/api/v1/factors/selected',{
+          factorIds: selectedFactors.value
+        },{
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        localStorage.setItem('selectedFactors', JSON.stringify(selectedFactors.value))
+        router.push('/session/alternatives')
+      } catch (err) {
+        console.error('Ошибка при отправке выбранных факторов:', err)
+        alert('Не удалось сохранить выбор. Попробуйте позже.')
+      }
     }
 
     onMounted(async () => {
@@ -128,7 +176,9 @@ export default {
       weakFactors,
       opportunityFactors,
       threatFactors,
-      getFactorNumber
+      selectedFactors,
+      getFactorNumber,
+      handleDone
     }
   }
 }

@@ -1,46 +1,46 @@
 <template>
   <q-page class="flex flex-center">
-    <q-card class="q-pa-lg" style="width: 350px">
+    <q-card style="width: 300px">
       <q-card-section>
-        <div class="text-h6">Вход</div>
-      </q-card-section>
-
-      <q-card-section>
+        <div class="text-h6 text-center">Вход</div>
         <q-input v-model="username" label="Логин" filled />
-        <q-input v-model="password" label="Пароль" filled type="password" class="q-mt-md" />
+        <q-input v-model="password" label="Пароль" type="password" filled class="q-mt-sm" />
       </q-card-section>
-
-      <q-card-actions align="right">
+      <q-card-actions align="center">
         <q-btn label="Войти" color="primary" @click="login" />
       </q-card-actions>
     </q-card>
-
-    <q-toast />
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
-import { useQuasar } from 'quasar'
+import { api } from 'boot/axios'
 
-const $q = useQuasar()
-
+const router = useRouter()
 const username = ref('')
 const password = ref('')
 
+onMounted(() => {
+  if (localStorage.getItem('token')) {
+    router.push('/')
+  }
+})
+
 const login = async () => {
   try {
-    const { data } = await axios.post('/api/auth/login', {
+    const response = await api.post('/api/auth/login', {
       username: username.value,
       password: password.value
     })
-    localStorage.setItem('token', data.token)
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
-    router.push('/session')
+    console.log(response.data.token)
+    localStorage.setItem('token', response.data.token)
+    localStorage.setItem('refreshToken', response.data.refreshToken)
+
+    router.push('/')
   } catch (err) {
-    $q.notify({ type: 'negative', message: 'Неверный логин или пароль' })
+    console.error('Ошибка входа:', err)
   }
 }
 </script>

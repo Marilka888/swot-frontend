@@ -59,13 +59,15 @@ const routes = [
       {path: 'version/:versionId', component: () => import('pages/session/alternatives/WeightTwoStagePage.vue')},
     ]
   },
-  // {
-  //   path: '/login',
-  //   component: () => import('layouts/LoginLayout.vue'),
-  //   children: [
-  //     {path: '', component: () => import('pages/Login.vue')}
-  //   ]
-  // },
+  {
+    path: '/login',
+    component: () => import('layouts/LoginLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/auth/LoginPage.vue') }
+    ],
+    meta: { public: true }
+  }
+
 
   // Always leave this as last one,
   // but you can also remove it

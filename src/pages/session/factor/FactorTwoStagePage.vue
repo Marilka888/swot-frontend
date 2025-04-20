@@ -72,7 +72,12 @@ export default {
 
     const fetchFactors = async () => {
       try {
-        const res = await axios.get('/api/factors'); // change to your actual backend route
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        const res = await axios.get( `http://localhost:8080/api/factors`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
         strongFactors.value = res.data.strong || [];
         weakFactors.value = res.data.weak || [];
         opportunityFactors.value = res.data.opportunity || [];
@@ -94,9 +99,14 @@ export default {
 
     const saveFactors = async () => {
       try {
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
         await axios.put(`/api/factors/${activeSection.value}`, {
           factors: editableFactors.value,
-        });
+        },{
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
 
         if (activeSection.value === 'strong') strongFactors.value = [...editableFactors.value];
         else if (activeSection.value === 'weak') weakFactors.value = [...editableFactors.value];

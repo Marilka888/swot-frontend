@@ -4,8 +4,10 @@
     <q-page-container style="padding-top: 70pt">
       <q-page class="q-pa-md flex column items-center">
         <div v-if="sessions.length === 0">
-          <q-spinner color="primary" size="2em" />
-          <div class="q-mt-sm">Загрузка сессий...</div>
+          Сессии не найдены
+          <div class="q-mt-lg justify-center row">
+            <q-btn label="СОЗДАТЬ" color="info" @click="showCreate = true"/>
+          </div>
         </div>
         <div v-else class="session-container column q-gutter-md">
           <q-card
@@ -36,7 +38,10 @@
               <q-input filled v-model="sessionName" label="название"/>
               <q-input filled v-model="admin" label="администратор"/>
               <q-input filled v-model="notes" label="заметки к сессии" type="textarea"/>
+              <q-input filled v-model="alternativeDifference" label="Δ альтернатив (коэф. разности)" type="number" step="0.001" />
+              <q-input filled v-model="trapezoidDifference" label="Δ трапеций (коэф. разности)" type="number" step="0.001" />
             </q-card-section>
+
             <q-card-actions align="center" class="q-px-md q-pb-md">
               <q-btn class="toast-button" flat label="ОТМЕНА" @click="showCreate = false"/>
               <q-btn class="toast-button" flat label="ГОТОВО" @click="saveSession"/>
@@ -58,6 +63,8 @@ const showCreate = ref(false)
 const sessionName = ref('')
 const admin = ref('')
 const notes = ref('')
+const alternativeDifference = ref('')
+const trapezoidDifference = ref('')
 const sessions = ref([])
 
 function goToSession(sessionId) {
@@ -77,18 +84,52 @@ function formatDate(dateStr) {
 
 async function fetchSessions() {
   try {
-    const response = await axios.get('http://localhost:8080/v1/sessions')
+    const token = localStorage.getItem('token') // ← токен сохраняется после логина
+    const response = await axios.get('http://localhost:8080/v1/sessions', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     sessions.value = response.data
+    console.log(sessions)
   } catch (error) {
     console.error('Ошибка при загрузке сессий:', error)
   }
 }
 
-function saveSession() {
-  showCreate.value = false
-  // можно отправить POST-запрос на сохранение
-  console.log('Создана сессия:', sessionName.value, admin.value, notes.value)
+
+async function saveSession() {
+  try {
+    const payload = {
+      name: sessionName.value,
+      admin: admin.value,
+      notes: notes.value,
+      alternativeDifference: parseFloat(alternativeDifference.value),
+      trapezoidDifference: parseFloat(trapezoidDifference.value)
+    }
+
+    // Отправка на бэкенд, ожидание sessionId и versionId в ответе
+    const token = localStorage.getItem('token') // ← токен сохраняется после логина
+    const response = await axios.post('http://localhost:8080/v1/sessions/create', payload,{
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    // Сохраняем в localStorage
+    localStorage.setItem("alternativeDifference", payload.alternativeDifference)
+
+    const createdSession = response.data
+    localStorage.setItem('sessionId', createdSession.sessionId)
+    localStorage.setItem('versionId', createdSession.versionId)
+
+    showCreate.value = false
+    await fetchSessions()
+  } catch (error) {
+    console.error('Ошибка при создании сессии:', error)
+  }
 }
+
+
 
 onMounted(() => {
   fetchSessions()
