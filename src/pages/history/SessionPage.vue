@@ -56,9 +56,30 @@ function formatDateTime(dateStr) {
   })
 }
 
-function createVersionSession () {
-  router.push(`/session/factors`)
+async function createVersionSession() {
+  try {
+    const token = localStorage.getItem('token')
+    const sessionId = route.params.sessionId
+    localStorage.setItem('sessionId', sessionId)
+
+    const response = await axios.post(
+      `http://localhost:8080/v1/sessions/${sessionId}/versions`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+    localStorage.setItem('versionId', response.data.id)
+
+    await fetchSession() // обновим список версий после создания
+    router.push(`/session/factors`)
+  } catch (e) {
+    console.error('Ошибка при создании версии сессии:', e)
+  }
 }
+
 
 async function fetchSession() {
   try {
