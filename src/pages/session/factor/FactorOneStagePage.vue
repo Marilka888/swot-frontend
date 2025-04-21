@@ -10,10 +10,10 @@
             class="bg-grey-3 text-black non-selectable-tabs tab-text-size"
             dense
           >
-            <q-tab name="factors" label="ФАКТОРЫ" />
-            <q-tab name="strength" label="ВЕСА ФАКТОРОВ" />
-            <q-tab name="alternatives" label="АЛЬТЕРНАТИВЫ" />
-            <q-tab name="results" label="РЕЗУЛЬТАТЫ" />
+            <q-tab name="factors" label="ФАКТОРЫ"/>
+            <q-tab name="strength" label="ВЕСА ФАКТОРОВ"/>
+            <q-tab name="alternatives" label="АЛЬТЕРНАТИВЫ"/>
+            <q-tab name="results" label="РЕЗУЛЬТАТЫ"/>
           </q-tabs>
         </div>
 
@@ -96,12 +96,12 @@
             <q-card-section>
               <q-input v-model="newFactorName"
                        :rules="[ val => val !== null && val !== '' || 'Пожалуйста, введите значение' ]"
-                       label="Название фактора" />
+                       label="Название фактора"/>
             </q-card-section>
 
             <q-card-actions align="around">
               <q-btn class="toast-button" label="Отмена" @click="addDialog = false"/>
-              <q-btn class="toast-button" color="info" label="Создать" @click="addFactor" />
+              <q-btn class="toast-button" color="info" label="Создать" @click="addFactor"/>
             </q-card-actions>
           </q-card>
         </q-dialog>
@@ -116,6 +116,8 @@
 
 <script>
 import axios from 'axios';
+import {connectWebSocket, sendFactor} from 'boot/websocket'
+
 
 export default {
   data() {
@@ -143,6 +145,12 @@ export default {
     }
   },
   mounted() {
+
+    connectWebSocket(localStorage.getItem('sessionId'), (factor) => {
+      // обработка нового фактора
+      console.log('🔄 Получен новый фактор через WS:', factor)
+      this.factors.value.push(factor)
+    });
     this.fetchFactors();
     this.adjustCellHeights();
     window.addEventListener('resize', this.adjustCellHeights);
@@ -150,13 +158,15 @@ export default {
   beforeUnmount() {
     window.removeEventListener('resize', this.adjustCellHeights);
   },
+
   methods: {
+
     async fetchFactors() {
       try {
         const sessionId = localStorage.getItem('sessionId')
         const versionId = localStorage.getItem('versionId')
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        const response = await axios.get( `http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`,   {
+        const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -176,7 +186,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        await axios.post( `http://localhost:8080/api/v1/factors`, newFactor,   {
+        await axios.post(`http://localhost:8080/api/v1/factors`, newFactor, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -275,6 +285,7 @@ export default {
   background: #02486c;
   color: white;
 }
+
 .with-circle::before {
   content: '';
   display: inline-block;
@@ -315,7 +326,7 @@ export default {
 
 .cell li {
   text-align: left;
-  font-weight: 500;  /*  Делаем текст немного жирнее  */
+  font-weight: 500; /*  Делаем текст немного жирнее  */
   font-size: 0.8em;
   word-wrap: break-word;
   margin-bottom: 8px;
@@ -324,7 +335,7 @@ export default {
 .list-item-small {
   word-wrap: break-word;
   margin-bottom: 8px;
-  font-weight: 500;  /*  Делаем текст немного жирнее  */
+  font-weight: 500; /*  Делаем текст немного жирнее  */
 }
 
 /* Текст табов такого же размера, как и текст списка */
@@ -365,7 +376,7 @@ export default {
 
 .q-tabs-container {
   width: 810px; /*  Ширина квадрата + gap  */
-  margin-bottom: 10px;  /* Отступ снизу */
+  margin-bottom: 10px; /* Отступ снизу */
 }
 
 /*стиль для кнопок*/

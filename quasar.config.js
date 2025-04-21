@@ -16,6 +16,7 @@ module.exports = configure(function (/* ctx */) {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
+    // quasar.config.js
 
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
@@ -23,7 +24,11 @@ module.exports = configure(function (/* ctx */) {
     boot: [
       'i18n',
       'axios',
+      'polyfills',
+      'websocket'
     ],
+
+
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: [
@@ -46,6 +51,20 @@ module.exports = configure(function (/* ctx */) {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
     build: {
+      define: {
+        global: 'globalThis'
+      },
+      alias: {
+        util: 'util/',
+        stream: 'stream-browserify',
+        events: 'events/',
+        process: 'process/browser',
+        buffer: 'buffer/'
+      },
+      optimizeDeps: {
+        include: ['buffer', 'process', 'events', 'stream', 'util']
+      }
+      ,
       target: {
         browser: [ 'es2019', 'edge88', 'firefox78', 'chrome87', 'safari13.1' ],
         node: 'node20'
