@@ -265,7 +265,7 @@ export default {
 
     const finishSession = async () => {
       const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      await axios.post('http://localhost:8080/v1/sessions/complete', null, {
+      await axios.post('http://localhost:8080/v1/session/complete', null, {
         headers: {
           Authorization: `Bearer ${token}`
         }

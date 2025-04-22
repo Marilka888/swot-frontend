@@ -63,7 +63,7 @@ async function createVersionSession() {
     localStorage.setItem('sessionId', sessionId)
 
     const response = await axios.post(
-      `http://localhost:8080/v1/sessions/${sessionId}/versions`,
+      `http://localhost:8080/v1/session/${sessionId}/versions`,
       {},
       {
         headers: {
