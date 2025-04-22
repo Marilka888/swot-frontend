@@ -68,7 +68,8 @@
         </div>
 
         <!-- КНОПКИ ЗАВЕРШЕНИЯ И ПЕРЕСЧЁТА -->
-        <div class="q-mt-md row q-gutter-md">
+        <div v-if="role === 'ADMIN'">
+          <div class="q-mt-md row q-gutter-md">
           <q-btn label="РЕЗУЛЬТАТЫ" class="done-button" @click="finishSession" />
           <q-btn
             v-if="showSensitivityButton"
@@ -81,6 +82,7 @@
       showSensitivityButton,
       isSimilarAlternative,
       alternativeDifference" />
+        </div>
         </div>
 
         <!-- АЛЬТЕРНАТИВЫ -->
@@ -142,7 +144,9 @@
             </q-card-section>
             <q-card-actions align="right">
               <q-btn flat label="ОК" color="primary" v-close-popup />
-              <q-btn flat label="Анализ чувствительности" color="orange" @click="openSensitivity" />
+              <div v-if="role === 'ADMIN'">
+                <q-btn flat label="Анализ чувствительности" color="orange" @click="openSensitivity" />
+              </div>
             </q-card-actions>
           </q-card>
 
@@ -166,6 +170,7 @@ export default {
     const sessionName = ref('Название сессии')
     const tab = ref('alternatives')
     const router = useRouter()
+    const role = localStorage.getItem('roles')
 
     const strongFactors = ref([])
     const weakFactors = ref([])
@@ -331,6 +336,7 @@ export default {
     })
 
     return {
+      role,
       openSensitivity, sessionName,
       showSensitivityDialog,
       sensitivityResults,

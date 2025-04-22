@@ -22,7 +22,9 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <q-btn label="Изменить" class="swot-button" @click="openEditDialog('strong')"/>
+              <div v-if="role === 'ADMIN'">
+                <q-btn label="Изменить" class="swot-button" @click="openEditDialog('strong')"/>
+              </div>
             </div>
           </div>
           <div class="cell weak bg-light-grey" ref="weakCell">
@@ -33,7 +35,9 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('weak')"/>
+              <div v-if="role === 'ADMIN'">
+                <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('weak')"/>
+              </div>
             </div>
           </div>
           <div class="cell opportunities bg-light-grey" ref="opportunityCell">
@@ -44,7 +48,9 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('opportunity')"/>
+              <div v-if="role === 'ADMIN'">
+                <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('opportunity')"/>
+              </div>
             </div>
           </div>
           <div class="cell threats bg-dark-red" ref="threatCell">
@@ -55,7 +61,9 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <q-btn label="Изменить" class="swot-button" @click="openEditDialog('threat')"/>
+              <div v-if="role === 'ADMIN'">
+                <q-btn label="Изменить" class="swot-button" @click="openEditDialog('threat')"/>
+              </div>
             </div>
           </div>
         </div>
@@ -71,22 +79,24 @@
               <div class="text-subtitle1">{{ sectionTitles[activeSection] }}</div>
             </q-card-section>
 
-            <q-card-section>
-              <div v-for="(factor, index) in editableFactors" :key="index" class="q-mb-sm">
-                <q-item bordered rounded class="factor-item">
-                  <q-item-section style="width: 80%; overflow-wrap: anywhere;">
-                    <q-input v-model="editableFactors[index].name"
-                             :rules="[ val => val !== null && val !== '' || 'Пожалуйста, введите значение' ]"
-                             borderless dense/>
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-btn icon="delete" color="red" flat rounded class="delete-button" @click="deleteFactor(index)">
-                      <q-icon name="delete" color="white"></q-icon>
-                    </q-btn>
-                  </q-item-section>
-                </q-item>
-              </div>
-            </q-card-section>
+            <div v-if="role === 'ADMIN'">
+              <q-card-section>
+                <div v-for="(factor, index) in editableFactors" :key="index" class="q-mb-sm">
+                  <q-item bordered rounded class="factor-item">
+                    <q-item-section style="width: 80%; overflow-wrap: anywhere;">
+                      <q-input v-model="editableFactors[index].name"
+                               :rules="[ val => val !== null && val !== '' || 'Пожалуйста, введите значение' ]"
+                               borderless dense/>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-btn icon="delete" color="red" flat rounded class="delete-button" @click="deleteFactor(index)">
+                        <q-icon name="delete" color="white"></q-icon>
+                      </q-btn>
+                    </q-item-section>
+                  </q-item>
+                </div>
+              </q-card-section>
+            </div>
 
             <q-card-actions align="around">
               <q-btn class="toast-button" label="Отмена" @click="editDialog = false"/>
@@ -100,7 +110,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import axios from 'axios'
 
 export default {
@@ -111,6 +121,7 @@ export default {
     const editDialog = ref(false)
     const activeSection = ref('')
     const editableFactors = ref([])
+    const role = localStorage.getItem('roles')
 
     const sectionTitles = {
       strong: 'Сильные стороны',
@@ -122,7 +133,7 @@ export default {
     const fetchFactors = async () => {
       try {
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        const { data } = await axios.get(`http://localhost:8080/api/v1/factors`, {
+        const {data} = await axios.get(`http://localhost:8080/api/v1/factors`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -143,13 +154,13 @@ export default {
     const openEditDialog = (section) => {
       activeSection.value = section
       editDialog.value = true
-      editableFactors.value = factors.value.filter(f => f.type === section).map(f => ({ ...f }))
+      editableFactors.value = factors.value.filter(f => f.type === section).map(f => ({...f}))
     }
 
     const saveFactors = async () => {
       try {
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        await axios.post( `http://localhost:8080/api/v1/factors/${activeSection.value}`, editableFactors.value, {
+        await axios.post(`http://localhost:8080/api/v1/factors/${activeSection.value}`, editableFactors.value, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -171,6 +182,7 @@ export default {
 
     return {
       tab,
+      role,
       sessionName,
       sectionTitles,
       strongFactors,

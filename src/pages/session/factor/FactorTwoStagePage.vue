@@ -70,6 +70,8 @@ export default {
     const activeSection = ref('');
     const editableFactors = ref([]);
 
+    const role = localStorage.getItem('roles')
+
     const fetchFactors = async () => {
       try {
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
@@ -128,6 +130,7 @@ export default {
     });
 
     return {
+      role,
       tab,
       sessionName,
       strongFactors,

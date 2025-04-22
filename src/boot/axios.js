@@ -41,6 +41,8 @@ api.interceptors.response.use(
 
           const newToken = response.data.token
           localStorage.setItem('token', newToken)
+          const role = response.data.roles
+          localStorage.setItem('roles', role)
 
           onRefreshed(newToken)
         } catch (refreshError) {

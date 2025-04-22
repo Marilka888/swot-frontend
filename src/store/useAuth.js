@@ -4,6 +4,7 @@ export function useAuth() {
   const login = async (username, password) => {
     const { data } = await axios.post('/api/auth/login', { username, password })
     localStorage.setItem('token', data.token)
+    localStorage.setItem('roles', data.roles)
     axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
 
     // Можно декодировать token для ролей, например через jwt-decode

@@ -14,32 +14,32 @@
             <h4 class="text-h5 text-white q-my-md">
               {{ title }}
             </h4>
-             <q-img
+            <q-img
               width="32px"
               :src="langImg(this.lang)"
               class="absolute"
               style="top: 5px; right: 12px; cursor:pointer;"
             >
-             <q-menu
+              <q-menu
                 content-class="bg-deep-purple-2"
                 anchor="top right"
                 self="top left"
               >
-          <q-list style="min-width: 100px">
-            <q-item v-for="{id,name} in languages"
-            :key="id"
-            clickable
-             @click="lang = id"
-            v-close-popup>
-               <q-item-section avatar>
-                  <img
-                    width="32px"
-                    :src="langImg(id)"/>
-                </q-item-section>
-              <q-item-section>{{name}}</q-item-section>
-            </q-item>
-          </q-list>
-        </q-menu>
+                <q-list style="min-width: 100px">
+                  <q-item v-for="{id,name} in languages"
+                          :key="id"
+                          clickable
+                          @click="lang = id"
+                          v-close-popup>
+                    <q-item-section avatar>
+                      <img
+                        width="32px"
+                        :src="langImg(id)"/>
+                    </q-item-section>
+                    <q-item-section>{{ name }}</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
             </q-img>
           </q-card-section>
           <q-card-section>
@@ -64,7 +64,7 @@
                 :label="$t('auth.email')"
               >
                 <template v-slot:prepend>
-                  <q-icon name="email" />
+                  <q-icon name="email"/>
                 </template>
               </q-input>
               <q-input
@@ -78,7 +78,7 @@
                 :label="$t('auth.username')"
               >
                 <template v-slot:prepend>
-                  <q-icon name="person" />
+                  <q-icon name="person"/>
                 </template>
               </q-input>
               <q-input
@@ -93,7 +93,7 @@
                 :label="$t('auth.password')"
               >
                 <template v-slot:prepend>
-                  <q-icon name="lock" />
+                  <q-icon name="lock"/>
                 </template>
                 <template v-slot:append>
                   <q-icon
@@ -116,7 +116,7 @@
                 :label="$t('auth.repassword')"
               >
                 <template v-slot:prepend>
-                  <q-icon name="lock" />
+                  <q-icon name="lock"/>
                 </template>
                 <template v-slot:append>
                   <q-icon
@@ -144,7 +144,7 @@
             class="text-center q-pa-sm"
           >
             <p class="text-grey-6">
-              {{this.$t('auth.forgotpass')}}
+              {{ this.$t('auth.forgotpass') }}
             </p>
           </q-card-section>
         </q-card>
@@ -154,9 +154,10 @@
 </template>
 
 <script>
-import { SIGNIN, SIGNUP } from 'src/queries'
-import { showError, showMsg } from '../front-lib'
-import { langs } from '../i18n'
+import {SIGNIN, SIGNUP} from 'src/queries'
+import {showError, showMsg} from '../front-lib'
+import {langs} from '../i18n'
+
 export default {
   name: 'MyLogin',
   data: function () {
@@ -176,7 +177,7 @@ export default {
     }
   },
   watch: {
-    lang (val) {
+    lang(val) {
       this.$i18n.locale = val
       import('quasar/lang/' + val).then(language => {
         this.$q.lang.set(language.default)
@@ -192,16 +193,16 @@ export default {
     }
   },
   computed: {
-    visibilityIcon () {
+    visibilityIcon() {
       return this.visibility ? 'visibility_off' : 'visibility'
     },
-    passwordFieldType () {
+    passwordFieldType() {
       return this.visibility ? 'text' : 'password'
     },
-    title () {
+    title() {
       return this.signup ? this.$t('auth.newuser') : this.$t('auth.auth')
     },
-    btnLabel () {
+    btnLabel() {
       return this.signup ? this.$t('auth.signup') : this.$t('auth.signin')
     },
     langImg: (app) => (lang) => {
@@ -210,7 +211,7 @@ export default {
   },
 
   methods: {
-    signUp () {
+    signUp() {
       this.$apollo
         .mutate({
           mutation: SIGNUP,
@@ -226,7 +227,7 @@ export default {
         })
         .catch(error => showError(error.message))
     },
-    signIn () {
+    signIn() {
       this.$apollo
         .mutate({
           mutation: SIGNIN,
@@ -235,29 +236,33 @@ export default {
             password: this.form.password
           }
         }).then(data => {
-          localStorage.setItem('token', data.data.signIn.token)
-          this.$router.push('/home')
-        }).catch(error => showError(error.message))
+        localStorage.setItem('token', data.data.signIn.token)
+        const role = data.data.signIn.roles
+        localStorage.setItem('roles', role)
+        this.$router.push('/home')
+      }).catch(error => showError(error.message))
     },
-    required (val) {
+    required(val) {
       return ((val && (val.length > 0)) || this.$t('validate.required'))
     },
-    match (reval) {
+    match(reval) {
       const val = this.$refs.password.value
       return ((reval && (val === reval)) || this.$t('validate.match'))
     },
-    short (val) {
+    short(val) {
       return ((val && (val.length > 3)) || this.$t('validate.short'))
     },
-    isEmail (val) {
+    isEmail(val) {
       const emailPattern = /^(?=[a-zA-Z0-9@._%+-]{6,254}$)[a-zA-Z0-9._%+-]{1,64}@(?:[a-zA-Z0-9-]{1,63}\.){1,8}[a-zA-Z]{2,63}$/
       return (emailPattern.test(val) || this.$t('validate.isemail'))
     },
-    submit () {
+    submit() {
       if (this.signup) {
-      // fire validate each field
+        // fire validate each field
         Object.keys(this.form).forEach(el => {
-          if (this.$refs[el] !== undefined) { this.$refs[el].validate() }
+          if (this.$refs[el] !== undefined) {
+            this.$refs[el].validate()
+          }
         })
         // check error of validation
 
@@ -266,7 +271,7 @@ export default {
         } else this.signUp()
       } else this.signIn()
     },
-    switchVisibility () {
+    switchVisibility() {
       this.visibility = !this.visibility
     }
   }

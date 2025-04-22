@@ -36,6 +36,7 @@ const login = async () => {
     })
     console.log(response.data.token)
     localStorage.setItem('token', response.data.token)
+    localStorage.setItem('roles', response.data.roles)
     localStorage.setItem('refreshToken', response.data.refreshToken)
 
     router.push('/')

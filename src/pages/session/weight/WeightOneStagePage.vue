@@ -202,12 +202,6 @@ const openWeightDialog = (type) => {
   showWeightDialog.value = true
 }
 
-// const limitRange = (factor) => {
-//   if (factor.range2[0] < factor.range1[0]) factor.range2[0] = factor.range1[0]
-//   if (factor.range2[1] > factor.range1[1]) factor.range2[1] = factor.range1[1]
-//   if (factor.range2[0] > factor.range2[1]) factor.range2[0] = factor.range2[1]
-// }
-
 const saveWeights = async () => {
   try {
     currentFactors.value = currentFactors.value.map(f => ({

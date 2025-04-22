@@ -130,6 +130,7 @@ export default {
         .then(response => {
           api.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
           localStorage.setItem('token', response.data.token);
+          localStorage.setItem('roles', response.data.roles)
           this.$router.push("/profile");
           // commit('register', {token: response.data.token, user: response.data.user})
         })
