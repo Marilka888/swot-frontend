@@ -61,6 +61,7 @@ async function createVersionSession() {
     const token = localStorage.getItem('token')
     const sessionId = route.params.sessionId
     localStorage.setItem('sessionId', sessionId)
+    console.log(token)
 
     const response = await axios.post(
       `http://localhost:8080/v1/session/${sessionId}/versions`,
