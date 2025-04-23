@@ -144,8 +144,10 @@ const threatCell = ref(null)
 
 const fetchFactors = async () => {
   try {
+    const sessionId = localStorage.getItem('sessionId')
+    const versionId = localStorage.getItem('versionId')
     const token = localStorage.getItem('token') // ← токен сохраняется после логина
-    const response = await axios.get('http://localhost:8080/api/v1/factors',{
+    const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }

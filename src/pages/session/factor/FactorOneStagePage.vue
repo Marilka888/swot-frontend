@@ -179,9 +179,15 @@ export default {
       }
     },
     async addFactor() {
+      const sessionId = localStorage.getItem('sessionId')
+      const versionId = localStorage.getItem('versionId')
+      const userId = localStorage.getItem('userId')
       const newFactor = {
         name: this.newFactorName,
-        type: this.activeSection
+        type: this.activeSection,
+        sessionId: sessionId,
+        versionId: versionId,
+        userId: userId
       };
 
       try {

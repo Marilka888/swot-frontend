@@ -74,18 +74,19 @@ export default {
 
     const fetchFactors = async () => {
       try {
+        const sessionId = localStorage.getItem('sessionId')
+        const versionId = localStorage.getItem('versionId')
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        const res = await axios.get( `http://localhost:8080/api/factors`, {
+        const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         })
-        strongFactors.value = res.data.strong || [];
-        weakFactors.value = res.data.weak || [];
-        opportunityFactors.value = res.data.opportunity || [];
-        threatFactors.value = res.data.threat || [];
+        this.factors = response.data || [];
+        await this.$nextTick();
+        this.adjustCellHeights();
       } catch (error) {
-        console.error('Ошибка при получении факторов:', error);
+        console.error('Ошибка при загрузке факторов:', error);
       }
     };
 

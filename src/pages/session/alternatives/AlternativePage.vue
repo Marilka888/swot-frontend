@@ -215,22 +215,29 @@ export default {
     }
 
     const fetchFactors = async () => {
-      const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const { data } = await axios.get('http://localhost:8080/api/v1/factors', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      strongFactors.value = data.filter(f => f.type === 'strong')
-      weakFactors.value = data.filter(f => f.type === 'weak')
-      opportunityFactors.value = data.filter(f => f.type === 'opportunity')
-      threatFactors.value = data.filter(f => f.type === 'threat')
+      try {
+        const sessionId = localStorage.getItem('sessionId')
+        const versionId = localStorage.getItem('versionId')
+        const token = localStorage.getItem('token') // ← токен сохраняется после логина
+        const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        const all = response.data
+        strongFactors.value = all.filter(f => f.type === 'strong')
+        weakFactors.value = all.filter(f => f.type === 'weak')
+        opportunityFactors.value = all.filter(f => f.type === 'opportunity')
+        threatFactors.value = all.filter(f => f.type === 'threat')
+      } catch (err) {
+        console.error('Ошибка загрузки факторов:', err)
+      }
     }
 
     const fetchAlternatives = async () => {
       const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
       const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const { data } = await axios.post('http://localhost:8080/api/session/alternatives', selectedFromStorage, {
+      const { data } = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -240,7 +247,7 @@ export default {
 
     const handleDone = async () => {
       const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const { data } = await axios.get('http://localhost:8080/api/session/alternatives', {
+      const { data } = await axios.get('http://localhost:8080/v1/session/alternatives', {
         headers: {
           Authorization: `Bearer ${token}`
         }

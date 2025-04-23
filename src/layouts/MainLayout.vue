@@ -6,7 +6,7 @@
           <q-btn flat label="СЕССИИ" :to="`/`" style="font-family: 'Montserrat Alternates', serif; font-weight: 500; font-size: 20px"/>
           <q-btn flat label="СТЕЙКХОЛДЕРЫ" :to="`/users`" style="font-family: 'Montserrat Alternates', serif; font-weight: 500; font-size: 20px"/>
           <q-space/>
-          <div class="q-mr-lg" style="font-weight: 500; font-size: 20px">Компания "{{ user?.companyName || '...' }}"</div>
+          <div class="q-mr-lg" style="font-weight: 500; font-size: 20px">Компания "{{ user?.company || '...' }}"</div>
 
           <!-- Кнопка с аватаром и выпадающим меню -->
           <q-btn round flat size="lg">
@@ -37,8 +37,14 @@ const user = ref(null)
 
 const getProfile = async () => {
   try {
-    const { data } = await axios.get('http://localhost:8080/api/auth/profile') // адаптируй путь под свой
+    const token = localStorage.getItem('token');
+    const { data } = await axios.get('http://localhost:8080/api/auth/profile', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     user.value = data
+    localStorage.setItem('userId', data.id)
   } catch (e) {
     console.error('Ошибка при получении профиля:', e)
     // например, редирект на логин при 401

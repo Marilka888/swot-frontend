@@ -22,7 +22,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN'">
+              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" class="swot-button" @click="openEditDialog('strong')"/>
               </div>
             </div>
@@ -35,7 +35,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN'">
+              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('weak')"/>
               </div>
             </div>
@@ -48,7 +48,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN'">
+              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('opportunity')"/>
               </div>
             </div>
@@ -61,7 +61,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN'">
+              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" class="swot-button" @click="openEditDialog('threat')"/>
               </div>
             </div>
@@ -79,7 +79,7 @@
               <div class="text-subtitle1">{{ sectionTitles[activeSection] }}</div>
             </q-card-section>
 
-            <div v-if="role === 'ADMIN'">
+            <div v-if="role === 'ADMIN_ROLE'">
               <q-card-section>
                 <div v-for="(factor, index) in editableFactors" :key="index" class="q-mb-sm">
                   <q-item bordered rounded class="factor-item">
@@ -132,17 +132,22 @@ export default {
 
     const fetchFactors = async () => {
       try {
+        const sessionId = localStorage.getItem('sessionId')
+        const versionId = localStorage.getItem('versionId')
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        const {data} = await axios.get(`http://localhost:8080/api/v1/factors`, {
+        const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         })
-        factors.value = data || []
-      } catch (err) {
-        console.error('Ошибка при загрузке факторов:', err)
+        factors.value = response.data || [];
+        console.log(this.factors)
+        await this.$nextTick();
+        this.adjustCellHeights();
+      } catch (error) {
+        console.error('Ошибка при загрузке факторов:', error);
       }
-    }
+    };
 
     const filteredByType = (type) => computed(() => factors.value.filter(f => f.type === type))
 

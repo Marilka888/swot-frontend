@@ -8,19 +8,21 @@
           </div>
 
           <div class="q-mb-sm h3">Заметки:</div>
-          {{ session.notes }}
+          <div style="background-color: rgba(198,198,198,0.53)">
+            {{ session.notes }}
+          </div>
 
-          <div class="text-subtitle2 text-grey-7 q-mt-xs">
+          <div class="q-mb-sm h3">
             Δ альтернатив: {{ session.alternativeDifference?.toFixed(3) ?? '—' }}<br>
             Δ трапеций: {{ session.trapezoidDifference?.toFixed(3) ?? '—' }}
           </div>
           <div class="column q-mt-sm q-gutter-md">
             <q-card
-              v-for="version in session.versions"
+              v-for="version in versions"
               :key="version.id"
               class="bg-grey-3 q-pa-sm row items-center justify-between"
             >
-              <div>Версия от {{ formatDateTime(version.timestamp) }}</div>
+              <div>Версия от {{ formatDateTime(version.createdAt) }}</div>
               <q-btn :to="`/session/alternatives/all`" label="Результаты" flat/>
             </q-card>
           </div>
@@ -43,6 +45,7 @@ import axios from 'axios'
 const route = useRoute()
 const router = useRouter()
 const session = ref(null)
+const versions = ref(null)
 const name = 'SessionPage'
 
 function formatDateTime(dateStr) {
@@ -81,7 +84,6 @@ async function createVersionSession() {
   }
 }
 
-
 async function fetchSession() {
   try {
     const {sessionId} = route.params
@@ -97,7 +99,23 @@ async function fetchSession() {
   }
 }
 
+async function fetchVersion() {
+  try {
+    const token = localStorage.getItem('token') // ← токен сохраняется после логина
+    const {sessionId} = route.params
+    const response = await axios.get(`http://localhost:8080/v1/session/${sessionId}/versions`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    versions.value = response.data
+  } catch (e) {
+    console.error('Ошибка при загрузке сессии:', e)
+  }
+}
+
 onMounted(fetchSession)
+onMounted(fetchVersion)
 </script>
 
 <style scoped>

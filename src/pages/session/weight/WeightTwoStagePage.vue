@@ -73,11 +73,9 @@
             </ul>
           </div>
         </div>
-        <div v-if="role === 'ADMIN'">
           <div class="q-mt-md">
             <q-btn label="ГОТОВО" class="done-button" @click="handleDone"/>
           </div>
-        </div>
       </q-page>
     </q-page-container>
   </q-layout>
@@ -111,8 +109,10 @@ export default {
 
     const fetchFactors = async () => {
       try {
+        const sessionId = localStorage.getItem('sessionId')
+        const versionId = localStorage.getItem('versionId')
         const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        const response = await axios.get('http://localhost:8080/api/v1/factors', {
+        const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
