@@ -11,17 +11,18 @@
             flat
             bordered
           >
-            <q-card-section class="q-pa-sm q-gutter-xs flex flex-col items-center justify-center text-center" style="height: 100%;">
-              <q-avatar size="48px" color="white" class="q-mb-sm" />
-              <div class="text-subtitle2">{{ user.name }}</div>
-              <div class="text-caption">коэф: {{ user.coefficient }}</div>
-              <q-btn size="sm" class="q-mt-sm" style="background-color: white" color="black" flat label="Редактировать" @click="editUser(user)" />
+            <q-card-section class="q-pa-sm q-gutter-xs flex flex-col items-center justify-center text-center"
+                            style="height: 100%;">
+              <q-avatar size="48px" color="white" class="q-mb-sm"/>
+              <div class="text-subtitle2">{{ user.fullName }}</div>
+              <q-btn size="sm" class="q-mt-sm" style="background-color: white" color="black" flat label="Редактировать"
+                     @click="editUser(user)"/>
             </q-card-section>
           </q-card>
         </div>
 
         <div class="q-mt-xl text-right">
-          <q-btn label="СОЗДАТЬ" color="info" @click="showCreate = true" />
+          <q-btn label="СОЗДАТЬ" color="info" @click="showCreate = true"/>
         </div>
       </q-page>
     </q-page-container>
@@ -30,12 +31,11 @@
     <q-dialog v-model="showCreate">
       <q-card class="q-pa-md bg-grey-3 q-pt-xl" style="width: 300px; border-radius: 20px">
         <q-card-section class="column items-center q-gutter-md">
-          <q-avatar size="80px" color="white" />
-          <q-input v-model="newUser.name" label="ФИО" filled />
-          <q-input v-model="newUser.login" label="логин" filled />
-          <q-input v-model="newUser.coefficient" label="коэффицент" filled />
-          <q-input v-model="newUser.role" label="роль" filled />
-          <q-btn label="СОЗДАТЬ" class="bg-white text-black q-mt-sm" @click="createUser" />
+          <q-avatar size="80px" color="white"/>
+          <q-input v-model="newUser.name" label="ФИО" filled/>
+          <q-input v-model="newUser.username" label="логин" filled/>
+          <q-input v-model="newUser.role" label="роль" filled/>
+          <q-btn label="СОЗДАТЬ" class="bg-white text-black q-mt-sm" @click="createUser"/>
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -44,54 +44,88 @@
     <q-dialog v-model="showEdit">
       <q-card class="q-pa-md bg-grey-3 q-pt-xl" style="width: 300px; border-radius: 20px">
         <q-card-section class="column items-center q-gutter-md">
-          <q-avatar size="80px" color="white" />
+          <q-avatar size="80px" color="white"/>
           <div class="text-center text-subtitle1">{{ selectedUser.name }}</div>
           <div class="text-caption">Логин: {{ selectedUser.login }}</div>
-          <q-input v-model="selectedUser.coefficient" label="коэффицент" filled />
-          <q-input v-model="selectedUser.role" label="роль" filled />
-          <q-btn label="РЕДАКТИРОВАТЬ" class="bg-white text-black q-mt-sm" @click="updateUser" />
+           <q-input v-model="selectedUser.role" label="роль" filled/>
+          <q-btn label="РЕДАКТИРОВАТЬ" class="bg-white text-black q-mt-sm" @click="updateUser"/>
         </q-card-section>
       </q-card>
     </q-dialog>
   </q-layout>
 </template>
 
-<script setup>
-import { ref } from 'vue'
+<script>
+import {computed, onMounted, ref, nextTick} from 'vue'
+import axios from 'axios'
 
-const stakeholders = ref([
-  { id: 1, name: 'Ивангов Иван Иванович', login: 'ivangov@rogi.ru', coefficient: 0.5, role: 'Аналитик', active: true },
-  { id: 2, name: 'Ким Елена Вячеславовна', login: 'kim@rogi.ru', coefficient: 0.4, role: 'Эксперт', active: true },
-  { id: 3, name: 'Богавчева Анна Евгеньевна', login: 'bogavcheva@rogi.ru', coefficient: 0.2, role: 'Наблюдатель', active: false },
-  { id: 4, name: 'Бужденко Ирина Андреевна', login: 'buzhdenko_irina@rogi.ru', coefficient: 0.7, role: 'Эксперт', active: false }
-])
+export default {
+  setup() {
 
-const showCreate = ref(false)
-const showEdit = ref(false)
-const newUser = ref({ name: '', login: '', coefficient: '', role: '' })
-const selectedUser = ref({})
+    const stakeholders = ref([]) // список пользователей
+    const editDialog = ref(false)
+    const showCreate = ref(false)
+    const showEdit = ref(false)
+    const newUser = ref({name: '', login: '', coefficient: '', role: ''})
+    const selectedUser = ref({})
 
-function editUser(user) {
-  selectedUser.value = { ...user }
-  showEdit.value = true
-}
+    function editUser(user) {
+      selectedUser.value = {...user}
+      showEdit.value = true
+    }
 
-function createUser() {
-  stakeholders.value.push({
-    id: Date.now(),
-    ...newUser.value,
-    active: true
-  })
-  showCreate.value = false
-  newUser.value = { name: '', login: '', coefficient: '', role: '' }
-}
+    function createUser() {
+      stakeholders.value.push({
+        id: Date.now(),
+        ...newUser.value,
+        active: true
+      })
+      showCreate.value = false
+      newUser.value = {name: '', login: '', coefficient: '', role: ''}
+    }
 
-function updateUser() {
-  const index = stakeholders.value.findIndex(u => u.id === selectedUser.value.id)
-  if (index !== -1) {
-    stakeholders.value[index] = { ...selectedUser.value }
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await axios.get('http://localhost:8080/api/admin/users', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        stakeholders.value = response.data || []
+        console.log('Пользователи:', stakeholders.value)
+      } catch (error) {
+        console.error('Ошибка при загрузке пользователей:', error)
+      }
+    }
+
+    function updateUser() {
+      const index = stakeholders.value.findIndex(u => u.id === selectedUser.value.id)
+      if (index !== -1) {
+        stakeholders.value[index] = { ...selectedUser.value }
+      }
+      showEdit.value = false
+    }
+
+
+    onMounted(() => {
+
+      fetchUsers()
+    })
+
+    return {
+      newUser,
+      selectedUser,
+      showCreate,
+      updateUser,
+      createUser,
+      editDialog,
+      editUser,
+      stakeholders,
+      showEdit
+    }
+
   }
-  showEdit.value = false
 }
 </script>
 
@@ -99,9 +133,11 @@ function updateUser() {
 .bg-grey-3 {
   background-color: #dddddd;
 }
+
 .rounded-borders {
   border-radius: 10px;
 }
+
 .user-card {
   width: 180px;
   margin: 10px;
@@ -114,11 +150,11 @@ function updateUser() {
   height: 200px;
 }
 
-.active{
+.active {
   background: #a5e8aa;
 }
 
-.no-active{
+.no-active {
   background: #cfcfcf;
 }
 </style>
