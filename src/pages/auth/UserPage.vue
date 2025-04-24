@@ -46,7 +46,7 @@
         <q-card-section class="column items-center q-gutter-md">
           <q-avatar size="80px" color="white"/>
           <div class="text-center text-subtitle1">{{ selectedUser.name }}</div>
-          <div class="text-caption">Логин: {{ selectedUser.login }}</div>
+          <div class="text-caption">Логин: {{ selectedUser.username }}</div>
            <q-input v-model="selectedUser.role" label="роль" filled/>
           <q-btn label="РЕДАКТИРОВАТЬ" class="bg-white text-black q-mt-sm" @click="updateUser"/>
         </q-card-section>
@@ -74,16 +74,6 @@ export default {
       showEdit.value = true
     }
 
-    function createUser() {
-      stakeholders.value.push({
-        id: Date.now(),
-        ...newUser.value,
-        active: true
-      })
-      showCreate.value = false
-      newUser.value = {name: '', login: '', coefficient: '', role: ''}
-    }
-
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem('token')
@@ -99,14 +89,36 @@ export default {
       }
     }
 
-    function updateUser() {
-      const index = stakeholders.value.findIndex(u => u.id === selectedUser.value.id)
-      if (index !== -1) {
-        stakeholders.value[index] = { ...selectedUser.value }
+    async function createUser() {
+      try {
+        const token = localStorage.getItem('token')
+        await axios.post('http://localhost:8080/api/admin', newUser.value, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        showCreate.value = false
+        newUser.value = { name: '', login: '', coefficient: '', role: '' }
+        await fetchUsers()
+      } catch (error) {
+        console.error('Ошибка при создании пользователя:', error)
       }
-      showEdit.value = false
     }
 
+    async function updateUser() {
+      try {
+        const token = localStorage.getItem('token')
+        await axios.put(`http://localhost:8080/api/admin/${selectedUser.value.id}`, selectedUser.value, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        showEdit.value = false
+        await fetchUsers()
+      } catch (error) {
+        console.error('Ошибка при обновлении пользователя:', error)
+      }
+    }
 
     onMounted(() => {
 
