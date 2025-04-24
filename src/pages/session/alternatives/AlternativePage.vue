@@ -68,7 +68,7 @@
         </div>
 
         <!-- КНОПКИ ЗАВЕРШЕНИЯ И ПЕРЕСЧЁТА -->
-          <div class="q-mt-md row q-gutter-md">
+        <div class="q-mt-md row q-gutter-md">
           <q-btn label="РЕЗУЛЬТАТЫ" class="done-button" @click="finishSession" />
           <q-btn
             v-if="showSensitivityButton"
@@ -143,7 +143,7 @@
             </q-card-section>
             <q-card-actions align="right">
               <q-btn flat label="ОК" color="primary" v-close-popup />
-                <q-btn flat label="Анализ чувствительности" color="orange" @click="openSensitivity" />
+              <q-btn flat label="Анализ чувствительности" color="orange" @click="openSensitivity" />
             </q-card-actions>
           </q-card>
 
@@ -229,7 +229,7 @@ export default {
     const fetchAlternatives = async () => {
       const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
       const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const { data } = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
+      const {data} = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -242,7 +242,7 @@ export default {
       const sessionId = localStorage.getItem('sessionId')
       const versionId = localStorage.getItem('versionId')
 
-      const { data } = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
+      const {data} = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
         headers: {
           Authorization: `Bearer ${token}`
         },
@@ -267,7 +267,7 @@ export default {
       const token = localStorage.getItem('token')
       const sessionId = localStorage.getItem('sessionId')
       await axios.post(`http://localhost:8080/v1/session/complete/${sessionId}`, null, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {Authorization: `Bearer ${token}`}
       })
       const versionId = localStorage.getItem('versionId')
       router.push(`/history/version/${versionId}`)
@@ -277,15 +277,15 @@ export default {
     const openAltDialog = (alt) => {
       selectedAlt.value = alt
       const key = `${alt.internalFactor}|${alt.externalFactor}`
-      const prev = revealMap.value[key] || { internal: 100, external: 100 }
-      selectedAltReveal.value = { ...prev }
+      const prev = revealMap.value[key] || {internal: 100, external: 100}
+      selectedAltReveal.value = {...prev}
       showAltDialog.value = true
     }
 
     const saveRevealPercentages = () => {
       const alt = selectedAlt.value
       const key = `${alt.internalFactor}|${alt.externalFactor}`
-      revealMap.value[key] = { ...selectedAltReveal.value }
+      revealMap.value[key] = {...selectedAltReveal.value}
       showAltDialog.value = false
     }
 
@@ -312,7 +312,7 @@ export default {
       }
 
       try {
-        const { data } = await axios.post(
+        const {data} = await axios.post(
           'http://localhost:8080/api/session/recalculate',
           payload,
           {
@@ -331,7 +331,6 @@ export default {
         console.error('Ошибка при пересчёте:', err)
       }
     }
-
 
 
     const isOldAlternative = (alt) => {
@@ -370,7 +369,10 @@ export default {
           }
         }
       }
-      lowDifferenceAlternatives.value = pairs
+      lowDifferenceAlternatives.value = pairs.flatMap(([i, j]) => [
+        sortedAlternatives.value[i],
+        sortedAlternatives.value[j]
+      ])
     }
 
 
@@ -422,6 +424,7 @@ export default {
 .old-alt {
   background-color: #fff4c2 !important;
 }
+
 .alt-id {
   width: 40px;
   font-weight: bold;
