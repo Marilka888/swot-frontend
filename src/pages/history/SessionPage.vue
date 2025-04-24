@@ -23,7 +23,7 @@
               class="bg-grey-3 q-pa-sm row items-center justify-between"
             >
               <div>Версия от {{ formatDateTime(version.createdAt) }}</div>
-              <q-btn :to="`/session/alternatives/all`" label="Результаты" flat/>
+              <q-btn :to="`/history/version/${version.id}`" label="Результаты" flat />
             </q-card>
           </div>
           <div class="q-mt-lg self-end">
@@ -45,6 +45,7 @@ import axios from 'axios'
 const route = useRoute()
 const router = useRouter()
 const session = ref(null)
+const sessionId = route.params.sessionId
 const versions = ref(null)
 const name = 'SessionPage'
 

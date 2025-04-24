@@ -56,7 +56,7 @@ const routes = [
     children: [
       {path: ':sessionId', component: () => import('pages/history/SessionPage.vue'), meta: {requiresAuth: true}},
       {path: '', component: () => import('pages/session/alternatives/AlternativePage.vue')},
-      {path: 'version/:versionId', component: () => import('pages/session/alternatives/WeightTwoStagePage.vue')},
+      {path: 'version/:versionId', component: () => import('pages/session/alternatives/ResultAlternativePage.vue')},
     ]
   },
   {

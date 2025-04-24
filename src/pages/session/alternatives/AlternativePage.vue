@@ -77,10 +77,7 @@
             color="warning"
             @click="openSensitivityDialog"
           />
-          <q-btn v-if="Object.keys(revealMap).length > 0" label="ПЕРЕСЧЁТ D*" color="info" class="done-button info" @click="recalculateAlternatives,
-      showSensitivityButton,
-      isSimilarAlternative,
-      alternativeDifference" />
+          <q-btn v-if="Object.keys(revealMap).length > 0" label="ПЕРЕСЧЁТ D*" color="info" class="done-button info" @click="recalculateAlternatives" />
         </div>
 
         <!-- АЛЬТЕРНАТИВЫ -->
@@ -189,22 +186,17 @@ export default {
 
     const openSensitivityDialog = () => {
       sensitivityResults.value = []
-
       for (let i = 0; i < sortedAlternatives.value.length; i++) {
         for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
           const diff = Math.abs(sortedAlternatives.value[i].closeness - sortedAlternatives.value[j].closeness)
           if (diff < minDifferenceThreshold.value) {
-            sensitivityResults.value.push({
-              index1: i,
-              index2: j,
-              diff
-            })
+            sensitivityResults.value.push({ index1: i, index2: j, diff })
           }
         }
       }
-
       showSensitivityDialog.value = true
     }
+
 
     const openSensitivity = () => {
       showSensitivityDialog.value = true
@@ -272,14 +264,14 @@ export default {
     }
 
     const finishSession = async () => {
-      const token = localStorage.getItem('token') // ← токен сохраняется после логина
+      const token = localStorage.getItem('token')
       await axios.post('http://localhost:8080/v1/session/complete', null, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       })
-      router.push('/session/version')
+      const versionId = localStorage.getItem('versionId')
+      router.push(`/history/version/${versionId}`)
     }
+
 
     const openAltDialog = (alt) => {
       selectedAlt.value = alt
@@ -297,18 +289,49 @@ export default {
     }
 
     const recalculateAlternatives = async () => {
-        const revealArray = Object.entries(revealMap.value).map(([key, value]) => {
-          const [internal, external] = key.split('|')
-          return { internal, external, ...value }
-        })
-      const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const { data } = await axios.post('http://localhost:8080/api/session/recalculate', revealArray, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const sessionId = localStorage.getItem('sessionId')
+      const versionId = localStorage.getItem('versionId')
+      const token = localStorage.getItem('token')
+
+      // Составляем массив раскрытий
+      const revealArray = Object.entries(revealMap.value).map(([key, value]) => {
+        const [internal, external] = key.split('|')
+        return {
+          internal,
+          external,
+          internalPercent: value.internal,
+          externalPercent: value.external
         }
       })
-        alternatives.value = data
+
+      const payload = {
+        sessionId,
+        versionId,
+        revealList: revealArray
       }
+
+      try {
+        const { data } = await axios.post(
+          'http://localhost:8080/api/session/recalculate',
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        )
+
+        console.log('Ответ от бэкенда:', data)
+
+        alternatives.value = data        // ⬅️ Обновляем реактивное состояние
+        showAll.value = true             // ⬅️ Включаем отображение обновлённых альтернатив
+
+      } catch (err) {
+        console.error('Ошибка при пересчёте:', err)
+      }
+    }
+
+
 
     const isOldAlternative = (alt) => {
       return previousAlternatives.value.some(

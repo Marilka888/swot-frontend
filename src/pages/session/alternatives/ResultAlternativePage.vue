@@ -2,191 +2,99 @@
   <q-layout view="hHh lpR fFf">
     <q-page-container style="padding-top: 70pt">
       <q-page class="q-pa-md flex column items-center">
+
         <div class="flex items-center q-mb-md" style="width: 100%; max-width: 800px; justify-content: space-between;">
           <div class="text-h6" style="text-transform: uppercase; text-align: center; flex-grow: 1;">
-            <q-btn icon="arrow_back" class="justify-start row" flat @click="$router.go(-1)"/>
+            <q-btn icon="arrow_back" class="justify-start row" flat @click="$router.go(-1)" />
             {{ sessionName }}
           </div>
         </div>
 
         <div class="text-subtitle2 q-mb-md">Версия от 10.02.2025 13:30</div>
 
-        <div
-          class="grid-analysis q-mt-md"
-          style="align-items: center; justify-content: center"
-        >
-          <div class="cell strong bg-dark-blue" ref="strongCell">
+        <div class="grid-analysis q-mt-md" style="align-items: center; justify-content: center">
+          <div class="cell strong bg-dark-blue">
             <div class="header">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in strongFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'strong', index)
-                    }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'strong', index) }}</span>
                   <span>{{ factor }}</span>
                 </span>
               </li>
             </ul>
           </div>
-          <div class="cell weak bg-light-grey" ref="weakCell">
+
+          <div class="cell weak bg-light-grey">
             <div class="header">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in weakFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'weak', index)
-                    }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'weak', index) }}</span>
                   <span>{{ factor }}</span>
                 </span>
               </li>
             </ul>
           </div>
-          <div class="cell opportunities bg-light-grey" ref="opportunityCell">
+
+          <div class="cell opportunities bg-light-grey">
             <div class="header">Возможности</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in opportunityFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'opportunity', index)
-                    }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'opportunity', index) }}</span>
                   <span>{{ factor }}</span>
                 </span>
               </li>
             </ul>
           </div>
-          <div class="cell threats bg-dark-red" ref="threatCell">
+
+          <div class="cell threats bg-dark-red">
             <div class="header">Угрозы</div>
             <ul class="centered-list q-mt-xs">
-              <li
-                v-for="(factor, index) in threatFactors"
-                :key="index"
-                class="list-item-small"
-              >
+              <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{
-                      getFactorNumber(factor, 'threat', index)
-                    }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'threat', index) }}</span>
                   <span>{{ factor }}</span>
                 </span>
               </li>
             </ul>
           </div>
-        </div>
-
-        <div class="q-mt-md justify-end row ">
-          <q-btn label="Изменить факторы" class="q-mt-md done-button" flat/>
         </div>
 
         <div class="alternatives q-mt-lg justify-center row">
           <div class="text-h6">АЛЬТЕРНАТИВЫ</div>
           <div v-for="(alt, index) in alternatives" :key="index"
                :class="{'alternative-block': index < 3, 'alternative-text': index >= 3}">
-              <div class="alt-metrics" v-if="index < 3">
-                <span><strong>d- = {{ alt.d_minus }}</strong></span>
-                <span><strong>d+ = {{ alt.d_plus }}</strong></span>
-                <span><strong>d* = {{ alt.d_star }}</strong></span>
-              </div>
-              <div class="alt-text" v-if="index < 3">
-                {{ alt.factor1 }} и {{ alt.factor2 }}
-              </div>
+            <div class="alt-metrics" v-if="index < 3">
+              <span><strong>d- = {{ alt.d_minus }}</strong></span>
+              <span><strong>d+ = {{ alt.d_plus }}</strong></span>
+              <span><strong>d* = {{ alt.d_star }}</strong></span>
+            </div>
+            <div class="alt-text" v-if="index < 3">
+              {{ alt.factor1 }} и {{ alt.factor2 }}
+            </div>
             <div v-if="index > 2" class="q-px-lg">
               <span style="font-weight: bold; font-size: 0.8em">
                 ( d- = {{ alt.d_minus }}; d+ = {{ alt.d_plus }}; d* = {{ alt.d_star }} )
               </span>
-
               {{ alt.factor1 }} и {{ alt.factor2 }}
             </div>
-
           </div>
         </div>
-
-        <div class="q-mt-md justify-end row">
-          <q-btn label="Изменить альтернативы" class="q-mt-md done-button" flat/>
-        </div>
-
-        <q-btn
-          label="Сохранить изменения"
-          icon="save"
-          color="primary"
-          class="q-mt-md"
-          @click="saveSummary"
-        />
-
-        <q-dialog v-model="editAltDialog">
-          <q-card style="min-width: 500px">
-            <q-card-section>
-              <div class="text-h6">Редактировать альтернативу</div>
-              <div>{{ selectedAlternative?.factor1 }} и {{ selectedAlternative?.factor2 }}</div>
-            </q-card-section>
-            <q-card-section>
-              <q-input v-model.number="selectedAlternative.d_minus" label="d-" type="number" />
-              <q-input v-model.number="selectedAlternative.d_plus" label="d+" type="number" class="q-mt-sm" />
-              <q-input v-model.number="selectedAlternative.d_star" label="d*" type="number" class="q-mt-sm" />
-            </q-card-section>
-            <q-card-actions align="right">
-              <q-btn flat label="Отмена" v-close-popup />
-              <q-btn flat label="Сохранить" color="primary" @click="saveAltEdit" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
-
-        <q-btn
-          icon="edit"
-          flat
-          round
-          color="primary"
-          @click="openAltEditDialog(alt)"
-        />
 
       </q-page>
     </q-page-container>
   </q-layout>
 </template>
 
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { useQuasar } from 'quasar'
-import { debounce } from 'quasar'
 
-const debouncedSave = debounce(() => saveSummary(), 500)
-
+const route = useRoute()
 const sessionId = route.params.sessionId || 1
-
-const editAltDialog = ref(false)
-const selectedAlternative = ref(null)
-
-const openAltEditDialog = (alt) => {
-  selectedAlternative.value = JSON.parse(JSON.stringify(alt)) // клон
-  editAltDialog.value = true
-}
-
-const saveAltEdit = () => {
-  const index = alternatives.value.findIndex(a =>
-    a.factor1 === selectedAlternative.value.factor1 &&
-    a.factor2 === selectedAlternative.value.factor2
-  )
-  if (index !== -1) {
-    alternatives.value[index] = { ...selectedAlternative.value }
-    saveSummary() // автообновление
-  }
-  editAltDialog.value = false
-}
-
 
 const sessionName = ref('')
 const strongFactors = ref([])
@@ -207,8 +115,10 @@ const getFactorNumber = (factor, section, index) => {
 
 const loadSummary = async () => {
   try {
-    const token = localStorage.getItem('token') // ← токен сохраняется после логина
-    const { data } = await axios.get('http://localhost:8080/api/session/${sessionId}/summary', {
+    const token = localStorage.getItem('token')
+    const versionId = route.params.versionId
+    const sessionId = localStorage.getItem('sessionId')
+    const { data } = await axios.get(`http://localhost:8080/api/session/${sessionId}/summary?versionId=${versionId}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -225,44 +135,9 @@ const loadSummary = async () => {
   }
 }
 
-const loading = ref(true)
-
-const saveSummary = async () => {
-  const payload = {
-    sessionName: sessionName.value,
-    factors: {
-      strong: strongFactors.value,
-      weak: weakFactors.value,
-      opportunity: opportunityFactors.value,
-      threat: threatFactors.value
-    },
-    factorNumbers: factorNumbers.value,
-    alternatives: alternatives.value
-  }
-
-  try {
-    const token = localStorage.getItem('token') // ← токен сохраняется после логина
-    await axios.post(`http://localhost:8080/api/session/${sessionId}/summary`, payload, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    $q.notify({ type: 'positive', message: 'Изменения сохранены' })
-  } catch (err) {
-    $q.notify({ type: 'negative', message: 'Ошибка при сохранении' })
-  }
-}
-
-
-
-onMounted(async () => {
-  loading.value = true
-  await loadSummary()
-  loading.value = false
-})
-
-
+onMounted(loadSummary)
 </script>
+
 
 
 <style>
