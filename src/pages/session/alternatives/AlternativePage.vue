@@ -132,8 +132,12 @@
               Найдены альтернативы, у которых |d+ - d-| меньше {{ minDifferenceThreshold }}:
               <ul>
                 <li v-for="(alt, i) in lowDifferenceAlternatives" :key="i">
-                  A{{ i + 1 }} ({{ alt.internalFactor }} и {{ alt.externalFactor }}) —
-                  Δ = {{ (Math.abs(alt.dplus - alt.dminus)).toFixed(3) }}
+                  Δ = {{
+                    alt.dplus != null && alt.dminus != null
+                      ? (Math.abs(alt.dplus - alt.dminus)).toFixed(3)
+                      : 'нет данных'
+                  }}
+
                 </li>
               </ul>
             </q-card-section>
@@ -234,34 +238,30 @@ export default {
     }
 
     const handleDone = async () => {
-      const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const { data } = await axios.get('http://localhost:8080/v1/session/alternatives', {
+      const token = localStorage.getItem('token')
+      const sessionId = localStorage.getItem('sessionId')
+      const versionId = localStorage.getItem('versionId')
+
+      const { data } = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
         headers: {
           Authorization: `Bearer ${token}`
+        },
+        params: {
+          sessionId,
+          versionId
         }
       })
+
       alternatives.value = data
       showAll.value = true
 
-      // Сравнение d* между всеми парами альтернатив
-      const pairs = []
-      for (let i = 0; i < data.length; i++) {
-        for (let j = i + 1; j < data.length; j++) {
-          const d1 = data[i].closeness ?? 0
-          const d2 = data[j].closeness ?? 0
-          const diff = Math.abs(d1 - d2)
-          if (diff < minDifferenceThreshold.value) {
-            pairs.push([i, j])
-          }
-        }
-      }
+      updateLowDifferenceAlternatives()
 
-      lowDifferenceAlternatives.value = pairs
-
-      if (pairs.length > 0) {
+      if (lowDifferenceAlternatives.value.length > 0) {
         showWarningDialog.value = true
       }
     }
+
 
     const finishSession = async () => {
       const token = localStorage.getItem('token')
@@ -356,6 +356,23 @@ export default {
       })
     }
 
+    const updateLowDifferenceAlternatives = () => {
+      const pairs = []
+      for (let i = 0; i < sortedAlternatives.value.length; i++) {
+        const a1 = sortedAlternatives.value[i]
+        if (a1?.dplus == null || a1?.dminus == null || a1?.closeness == null) continue
+        for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
+          const a2 = sortedAlternatives.value[j]
+          if (a2?.dplus == null || a2?.dminus == null || a2?.closeness == null) continue
+          const diff = Math.abs(a1.closeness - a2.closeness)
+          if (diff < minDifferenceThreshold.value) {
+            pairs.push([i, j])
+          }
+        }
+      }
+      lowDifferenceAlternatives.value = pairs
+    }
+
 
     onMounted(async () => {
       await fetchFactors()
@@ -363,6 +380,7 @@ export default {
     })
 
     return {
+      updateLowDifferenceAlternatives,
       role,
       openSensitivity, sessionName,
       showSensitivityDialog,
