@@ -61,24 +61,25 @@
             </ul>
           </div>
         </div>
-
-        <div class="alternatives q-mt-lg justify-center row">
+        <div class="alternatives q-mt-lg">
           <div class="text-h6">АЛЬТЕРНАТИВЫ</div>
-          <div v-for="(alt, index) in alternatives" :key="index"
-               :class="{'alternative-block': index < 3, 'alternative-text': index >= 3}">
-            <div class="alt-metrics" v-if="index < 3">
-              <span><strong>d- = {{ alt.d_minus }}</strong></span>
-              <span><strong>d+ = {{ alt.d_plus }}</strong></span>
-              <span><strong>d* = {{ alt.d_star }}</strong></span>
-            </div>
-            <div class="alt-text" v-if="index < 3">
-              {{ alt.factor1 }} и {{ alt.factor2 }}
-            </div>
-            <div v-if="index > 2" class="q-px-lg">
-              <span style="font-weight: bold; font-size: 0.8em">
-                ( d- = {{ alt.d_minus }}; d+ = {{ alt.d_plus }}; d* = {{ alt.d_star }} )
-              </span>
-              {{ alt.factor1 }} и {{ alt.factor2 }}
+          <div v-if="alternatives.length === 0">Альтернативы не найдены</div>
+
+          <div
+            class="alternative old-alt"
+            v-for="(alt, index) in alternatives"
+            :key="'alt-' + index"
+          >
+            <div class="alt-id">A{{ index + 1 }}</div>
+            <div class="alt-data">
+              <div class="alt-numbers">
+                <div>d+ = {{ alt.d_plus?.toFixed(3) }}</div>
+                <div>d- = {{ alt.d_minus?.toFixed(3) }}</div>
+                <div>d* = {{ alt.d_star?.toFixed(3) }}</div>
+              </div>
+              <div class="alt-description">
+                {{ alt.factor1 }} и {{ alt.factor2 }}
+              </div>
             </div>
           </div>
         </div>
@@ -295,6 +296,189 @@ onMounted(loadSummary)
   text-align: left; /* Выравниваем текст по правому краю */
   margin-right: 0.7em; /* Небольшой отступ, если нужно */
 }
+.old-alt {
+  background-color: #ececec !important;
+}
+.alt-id {
+  width: 40px;
+  font-weight: bold;
+  text-align: left;
+  margin-right: 10px;
+  color: #025780;
+}
+
+.alt-data {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+.alt-numbers {
+  display: flex;
+  gap: 20px;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.alt-description {
+  margin-top: 6px;
+  font-size: 1em;
+  font-weight: 400;
+}
+
+.q-toolbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.grid-analysis {
+  display: grid;
+  grid-template-columns: repeat(2, 400px);
+  grid-template-rows: auto; /* Автоматическая высота строк */
+  gap: 10px;
+  width: 100%;
+  max-width: none;
+  justify-content: center;
+}
+
+.factor-item .q-item__section--side {
+  display: flex;
+  align-items: center;
+}
+
+.cell {
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  min-height: 350px;
+  /* min-height: 300px; */ /* Убираем или комментируем min-height */
+}
+
+.centered-list { /* или .cell ul */
+  list-style-position: outside;
+  width: 100%;
+  margin-bottom: 0;
+  padding-left: 16px;
+  flex-grow: 1;
+  margin-top: 16px;
+  list-style-type: none;
+}
+
+.cell ul {
+  padding-left: 16px;
+  list-style-position: outside;
+  width: 100%;
+  margin-bottom: 0;
+  flex-grow: 1;
+  margin-top: 16px; /* Добавляем отступ сверху списка */
+  overflow-y: auto;
+}
+
+.bg-light-red {
+  background: #02486c;
+  color: white;
+}
+
+.bg-dark-red {
+  background: #02486c;
+  color: white;
+}
+
+.bg-light-grey {
+  background: #E0E0E0;
+}
+
+.header {
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-align: center;
+  width: 100%;
+  font-size: 1em;
+}
+
+/*стиль чтобы отключить кликабельность*/
+.non-selectable-tabs .q-tab {
+  pointer-events: none;
+  cursor: default;
+}
+
+.alternatives {
+  width: 100%;
+  max-width: 800px;
+}
+
+.alternative {
+  display: flex;
+  justify-content: space-between;
+  background: #ECECEC;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.alt-metricss {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px;
+  font-weight: bold;
+}
+
+.alt-textt {
+  overflow-y: auto;
+  max-width: 500px;
+}
+
+.cell li {
+  text-align: left;
+  font-weight: 500; /*  Делаем текст немного жирнее  */
+  font-size: 0.8em;
+  word-wrap: break-word;
+  margin-bottom: 8px;
+}
+
+.list-item-small {
+  word-wrap: break-word;
+  margin-bottom: 8px;
+  font-weight: 500; /*  Делаем текст немного жирнее  */
+}
+
+/* Текст табов такого же размера, как и текст списка */
+.tab-text-size .q-tab__label {
+  font-size: 0.9em;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.bg-light-red {
+  background: #02486c;
+  color: white;
+}
+
+.q-card-actions-custom .q-btn {
+  margin: 0 16px; /* добавляем отступ между кнопками */
+}
+
+.add-dialog .q-card-actions .q-btn {
+  margin: 0 8px; /* добавляем отступ между кнопками */
+}
+
+.q-tabs-container {
+  width: 810px; /*  Ширина квадрата + gap  */
+  margin-bottom: 10px; /* Отступ снизу */
+}
+
+.numbered-factor .number {
+  width: 6em; /* Задайте фиксированную ширину, чтобы вместить самое длинное число */
+  text-align: left; /* Выравниваем текст по правому краю */
+  margin-right: 0.7em; /* Небольшой отступ, если нужно */
+}
 
 .done-button {
   color: white;
@@ -303,35 +487,6 @@ onMounted(loadSummary)
   padding: 15px 35px;
   text-transform: none;
   font-weight: bold;
-  font-size: 0.9em;
-}
-
-.alternative-block {
-  display: flex;
-  background: #ECECEC;
-  padding: 10px;
-  border-radius: 8px;
-  margin-top: 10px;
-  min-width: 800px;
-  font-weight: bolder;
-  font-size: 0.8em;
-}
-
-.alternative-text {
-  font-size: 0.8em;
-  margin-top: 10px;
-  justify-content: space-between;
-  word-wrap: break-word;
-  margin-bottom: 8px;
-}
-
-.done-button {
-  color: white;
-  background: #1f1fac;
-  border-radius: 20px;
-  padding: 15px 35px;
-  text-transform: none;
-  font-weight: 1500;
   font-size: 0.9em;
 }
 </style>
