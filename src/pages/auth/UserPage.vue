@@ -7,11 +7,12 @@
           <q-card
             v-for="user in stakeholders"
             :key="user.id"
-            :class="['user-card', user.active ? 'active' : 'no-active']"
+            :class="['user-card', user.reg ? 'registered' : (user.active ? 'active' : 'no-active')]"
             flat
             bordered
           >
-            <q-card-section class="q-pa-sm q-gutter-xs flex flex-col items-center justify-center text-center"
+
+          <q-card-section class="q-pa-sm q-gutter-xs flex flex-col items-center justify-center text-center"
                             style="height: 100%;">
               <q-avatar size="48px" color="white" class="q-mb-sm"/>
               <div class="text-subtitle2">{{ user.fullName }}</div>
@@ -166,7 +167,9 @@ export default {
   background: #a5e8aa;
 }
 
-.no-active {
-  background: #cfcfcf;
+.registered {
+  background: #b2f2bb; /* Светло-зелёный */
+  border: 2px solid #28a745;
 }
+
 </style>

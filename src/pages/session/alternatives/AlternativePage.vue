@@ -265,7 +265,8 @@ export default {
 
     const finishSession = async () => {
       const token = localStorage.getItem('token')
-      await axios.post('http://localhost:8080/v1/session/complete', null, {
+      const sessionId = localStorage.getItem('sessionId')
+      await axios.post(`http://localhost:8080/v1/session/complete/${sessionId}`, null, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const versionId = localStorage.getItem('versionId')
