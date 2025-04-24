@@ -22,9 +22,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" class="swot-button" @click="openEditDialog('strong')"/>
-              </div>
             </div>
           </div>
           <div class="cell weak bg-light-grey" ref="weakCell">
@@ -35,9 +33,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('weak')"/>
-              </div>
             </div>
           </div>
           <div class="cell opportunities bg-light-grey" ref="opportunityCell">
@@ -48,9 +44,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" color="info" class="swot-button" @click="openEditDialog('opportunity')"/>
-              </div>
             </div>
           </div>
           <div class="cell threats bg-dark-red" ref="threatCell">
@@ -61,9 +55,7 @@
               </li>
             </ul>
             <div class="q-pt-md add-button-container">
-              <div v-if="role === 'ADMIN_ROLE'">
                 <q-btn label="Изменить" class="swot-button" @click="openEditDialog('threat')"/>
-              </div>
             </div>
           </div>
         </div>
@@ -79,7 +71,6 @@
               <div class="text-subtitle1">{{ sectionTitles[activeSection] }}</div>
             </q-card-section>
 
-            <div v-if="role === 'ADMIN_ROLE'">
               <q-card-section>
                 <div v-for="(factor, index) in editableFactors" :key="index" class="q-mb-sm">
                   <q-item bordered rounded class="factor-item">
@@ -96,7 +87,6 @@
                   </q-item>
                 </div>
               </q-card-section>
-            </div>
 
             <q-card-actions align="around">
               <q-btn class="toast-button" label="Отмена" @click="editDialog = false"/>

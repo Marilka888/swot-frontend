@@ -36,7 +36,38 @@
             </q-card-section>
             <q-card-section class="q-gutter-md column">
               <q-input filled v-model="sessionName" label="название"/>
-              <q-input filled v-model="admin" label="администратор"/>
+              <q-select
+                filled
+                v-model="admin"
+                :options="userOptions"
+                option-label="label"
+                option-value="id"
+                label="Администратор сессии"
+                emit-value
+                map-options
+              />
+              <q-select
+                filled
+                v-model="selectedUsers"
+                :options="userOptions"
+                option-label="label"
+                option-value="id"
+                label="Участники сессии"
+                multiple
+                emit-value
+                map-options
+              />
+              <div v-for="userId in selectedUsers" :key="userId" class="row items-center q-gutter-sm">
+                <div class="text-subtitle2">{{ getUserNameById(userId) }}</div>
+                <q-input
+                  dense
+                  v-model="userCoefficients[userId]"
+                  type="number"
+                  step="0.01"
+                  label="Коэффициент"
+                  style="width: 120px"
+                />
+              </div>
               <q-input filled v-model="notes" label="заметки к сессии" type="textarea"/>
               <q-input filled v-model="alternativeDifference" label="Δ альтернатив (коэф. разности)" type="number" step="0.001" />
               <q-input filled v-model="trapezoidDifference" label="Δ трапеций (коэф. разности)" type="number" step="0.001" />
@@ -66,7 +97,31 @@ const notes = ref('')
 const alternativeDifference = ref('')
 const trapezoidDifference = ref('')
 const sessions = ref([])
+const userOptions = ref([])
+const selectedUsers = ref([])
+const userCoefficients = ref({})
+function getUserNameById(id) {
+  const user = userOptions.value.find(u => u.id === id)
+  return user ? user.label : ''
+}
 
+// Загрузка пользователей из компании
+async function fetchUsers() {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await axios.get('http://localhost:8080/api/admin/users', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    userOptions.value = response.data.map(u => ({
+      id: u.id,
+      label: u.fullName
+    }))
+  } catch (e) {
+    console.error('Ошибка при загрузке пользователей', e)
+  }
+}
 function goToSession(sessionId) {
   console.log("sessionId")
   console.log(sessionId)
@@ -102,10 +157,14 @@ async function saveSession() {
   try {
     const payload = {
       name: sessionName.value,
-      admin: admin.value,
+      admin: admin.value, // теперь это id выбранного пользователя
       notes: notes.value,
       alternativeDifference: parseFloat(alternativeDifference.value),
-      trapezoidDifference: parseFloat(trapezoidDifference.value)
+      trapezoidDifference: parseFloat(trapezoidDifference.value),
+      participants: selectedUsers.value.map(id => ({
+        userId: id,
+        coefficient: parseFloat(userCoefficients[id] || 1.0)
+      }))
     }
 
     // Отправка на бэкенд, ожидание sessionId и versionId в ответе
@@ -133,6 +192,7 @@ async function saveSession() {
 
 onMounted(() => {
   fetchSessions()
+  fetchUsers()
 })
 </script>
 
