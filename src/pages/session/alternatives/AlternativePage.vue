@@ -129,17 +129,20 @@
               Внимание: Низкая разность между альтернативами
             </q-card-section>
             <q-card-section>
-              Найдены альтернативы, у которых d* меньше {{ minDifferenceThreshold }}:
+              Найдены альтернативы, у которых |d+ - d-| меньше {{ minDifferenceThreshold }}:
+
               <ul>
-                <li v-for="(alt, i) in lowDifferenceAlternatives" :key="i">
-                  Δ = {{
-                    alt.closeness != null
-                      ? (Math.abs(alt.closeness - lowDifferenceAlternatives[${i+1}].closeness)).toFixed(3)
+                <li v-for="(pair, i) in lowDifferenceAlternatives" :key="i">
+                  A{{ pair[0] + 1 }} и A{{ pair[1] + 1 }} — Δ = {{
+                    (sortedAlternatives[pair[0]]?.closeness != null &&
+                      sortedAlternatives[pair[1]]?.closeness != null)
+                      ? Math.abs(sortedAlternatives[pair[0]].closeness - sortedAlternatives[pair[1]].closeness).toFixed(3)
                       : 'нет данных'
                   }}
-
                 </li>
               </ul>
+
+
             </q-card-section>
             <q-card-actions align="right">
               <q-btn flat label="ОК" color="primary" v-close-popup />
@@ -202,7 +205,6 @@ export default {
     }
 
 
-
     const openSensitivity = () => {
       showSensitivityDialog.value = true
     }
@@ -230,7 +232,7 @@ export default {
     const fetchAlternatives = async () => {
       const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
       const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const {data} = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
+      const { data } = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -243,7 +245,7 @@ export default {
       const sessionId = localStorage.getItem('sessionId')
       const versionId = localStorage.getItem('versionId')
 
-      const {data} = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
+      const { data } = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
         headers: {
           Authorization: `Bearer ${token}`
         },
@@ -264,12 +266,11 @@ export default {
     }
 
 
-
     const finishSession = async () => {
       const token = localStorage.getItem('token')
       const sessionId = localStorage.getItem('sessionId')
       await axios.post(`http://localhost:8080/v1/session/complete/${sessionId}`, null, {
-        headers: {Authorization: `Bearer ${token}`}
+        headers: { Authorization: `Bearer ${token}` }
       })
       const versionId = localStorage.getItem('versionId')
       router.push(`/history/version/${versionId}`)
@@ -279,15 +280,15 @@ export default {
     const openAltDialog = (alt) => {
       selectedAlt.value = alt
       const key = `${alt.internalFactor}|${alt.externalFactor}`
-      const prev = revealMap.value[key] || {internal: 100, external: 100}
-      selectedAltReveal.value = {...prev}
+      const prev = revealMap.value[key] || { internal: 100, external: 100 }
+      selectedAltReveal.value = { ...prev }
       showAltDialog.value = true
     }
 
     const saveRevealPercentages = () => {
       const alt = selectedAlt.value
       const key = `${alt.internalFactor}|${alt.externalFactor}`
-      revealMap.value[key] = {...selectedAltReveal.value}
+      revealMap.value[key] = { ...selectedAltReveal.value }
       showAltDialog.value = false
     }
 
@@ -314,7 +315,7 @@ export default {
       }
 
       try {
-        const {data} = await axios.post(
+        const { data } = await axios.post(
           'http://localhost:8080/api/session/recalculate',
           payload,
           {
@@ -333,6 +334,7 @@ export default {
         console.error('Ошибка при пересчёте:', err)
       }
     }
+
 
 
     const isOldAlternative = (alt) => {
@@ -371,10 +373,7 @@ export default {
           }
         }
       }
-      lowDifferenceAlternatives.value = pairs.flatMap(([i, j]) => [
-        sortedAlternatives.value[i],
-        sortedAlternatives.value[j]
-      ])
+      lowDifferenceAlternatives.value = pairs
     }
 
 
@@ -426,7 +425,6 @@ export default {
 .old-alt {
   background-color: #fff4c2 !important;
 }
-
 .alt-id {
   width: 40px;
   font-weight: bold;
