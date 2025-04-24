@@ -129,12 +129,12 @@
               Внимание: Низкая разность между альтернативами
             </q-card-section>
             <q-card-section>
-              Найдены альтернативы, у которых |d+ - d-| меньше {{ minDifferenceThreshold }}:
+              Найдены альтернативы, у которых d* меньше {{ minDifferenceThreshold }}:
               <ul>
                 <li v-for="(alt, i) in lowDifferenceAlternatives" :key="i">
                   Δ = {{
-                    alt.dplus != null && alt.dminus != null
-                      ? (Math.abs(alt.dplus - alt.dminus)).toFixed(3)
+                    alt.closeness != null
+                      ? (Math.abs(alt.closeness - lowDifferenceAlternatives[${i+1}].closeness)).toFixed(3)
                       : 'нет данных'
                   }}
 
@@ -202,6 +202,7 @@ export default {
     }
 
 
+
     const openSensitivity = () => {
       showSensitivityDialog.value = true
     }
@@ -261,6 +262,7 @@ export default {
         showWarningDialog.value = true
       }
     }
+
 
 
     const finishSession = async () => {
