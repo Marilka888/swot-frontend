@@ -323,7 +323,7 @@ const recalculateAlternatives = async () => {
   const payload = { sessionId, versionId, revealList: revealArray }
 
   try {
-    const { data } = await axios.post('http://localhost:8080/api/session/recalculate', payload, {
+    const { data } = await axios.post('http://localhost:8080/api/session/recalculate/save', payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
     console.log('Ответ от бэкенда:', data)
