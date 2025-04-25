@@ -143,13 +143,12 @@
             </q-card-section>
             <q-card-actions align="right">
               <q-btn flat label="ОК" color="primary" v-close-popup />
-              <q-btn flat label="Анализ чувствительности" color="orange" @click="openSensitivity" />
             </q-card-actions>
           </q-card>
 
         </q-dialog>
 
-        <div class="q-mt-md row justify-end" v-if="!showAll">
+        <div class="q-mt-md row justify-end">
           <q-btn label="ПОКАЗАТЬ ВСЕ" class="done-button" @click="handleDone" />
         </div>
 
@@ -323,7 +322,7 @@ const recalculateAlternatives = async () => {
   const payload = { sessionId, versionId, revealList: revealArray }
 
   try {
-    const { data } = await axios.post('http://localhost:8080/api/session/recalculate/save', payload, {
+    const { data } = await axios.post('http://localhost:8080/api/session/recalculate', payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
     console.log('Ответ от бэкенда:', data)

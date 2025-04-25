@@ -61,6 +61,12 @@
             </ul>
           </div>
         </div>
+        <q-btn
+            label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
+            class="done-button q-mt-lg"
+            color="warning"
+            @click="openSensitivityDialog"
+        />
         <div class="alternatives q-mt-lg">
           <div class="text-h6">АЛЬТЕРНАТИВЫ</div>
           <div v-if="alternatives.length === 0">Альтернативы не найдены</div>
@@ -83,7 +89,33 @@
             </div>
           </div>
         </div>
-
+        <q-dialog v-model="showSensitivityDialog">
+          <q-card style="width: 500px; max-width: 90%;">
+            <q-card-section class="text-h6 text-primary">
+              Анализ чувствительности
+            </q-card-section>
+            <q-card-section>
+              <div v-if="sensitivityResults.length === 0">
+                Анализ чувствительности не выявил похожих альтернатив.
+              </div>
+              <div v-else>
+                <p>Сравнение альтернатив с учётом изменения коэффициента:</p>
+                <ul>
+                  <li v-for="(pair, index) in sensitivityResults" :key="index">
+                    {{ pair.alt1.internalFactor }} и {{ pair.alt1.externalFactor }} |
+                    {{ pair.alt2.internalFactor }} и {{ pair.alt2.externalFactor }} —
+                    <span v-if="pair.comparison === 0">равны</span>
+                    <span v-else-if="pair.comparison === 1">первая выше</span>
+                    <span v-else>вторая выше</span>
+                  </li>
+                </ul>
+              </div>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Закрыть" v-close-popup />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
       </q-page>
     </q-page-container>
   </q-layout>
@@ -109,7 +141,25 @@ const factorNumbers = ref({
   opportunity: [],
   threat: []
 })
+const openSensitivityDialog = async () => {
+  showSensitivityDialog.value = true
+  sensitivityAnalysis.value = []
 
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+  const token = localStorage.getItem('token')
+
+  try {
+    const { data } = await axios.post('http://localhost:8080/api/session/sensitivity-analysis',
+        { sessionId, versionId },
+        { headers: { Authorization: `Bearer ${token}` } }
+    )
+    sensitivityAnalysis.value = data
+  } catch (err) {
+    console.error('Ошибка при анализе чувствительности:', err)
+    sensitivityAnalysis.value = [{ description: 'Ошибка при анализе чувствительности' }]
+  }
+}
 const getFactorNumber = (factor, section, index) => {
   return factorNumbers.value[section]?.[index] ?? '-'
 }
