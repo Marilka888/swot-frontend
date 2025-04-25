@@ -10,85 +10,118 @@
           </div>
         </div>
 
-        <div class="text-subtitle2 q-mb-md">Версия от 10.02.2025 13:30</div>
-
         <div class="grid-analysis q-mt-md" style="align-items: center; justify-content: center">
-          <div class="cell strong bg-dark-blue">
-            <div class="header">Сильные стороны</div>
+          <!-- ФАКТОРЫ -->
+          <div class="cell strong bg-light-red" ref="strongCell">
+            <div class="header with-circle text-green">Сильные стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in strongFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'strong', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
           </div>
-
-          <div class="cell weak bg-light-grey">
-            <div class="header">Слабые стороны</div>
+          <div class="cell weak bg-light-grey" ref="weakCell">
+            <div class="header with-circle text-pink">Слабые стороны</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in weakFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'weak', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
           </div>
-
-          <div class="cell opportunities bg-light-grey">
-            <div class="header">Возможности</div>
+          <div class="cell opportunities bg-light-grey" ref="opportunityCell">
+            <div class="header with-circle text-green">Возможности</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in opportunityFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'opportunity', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
           </div>
-
-          <div class="cell threats bg-dark-red">
-            <div class="header">Угрозы</div>
+          <div class="cell threats bg-dark-red" ref="threatCell">
+            <div class="header with-circle text-pink">Угрозы</div>
             <ul class="centered-list q-mt-xs">
               <li v-for="(factor, index) in threatFactors" :key="index" class="list-item-small">
                 <span class="numbered-factor">
-                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor, 'threat', index) }}</span>
-                  <span>{{ factor }}</span>
+                  <span class="number" style="font-weight: bold">{{ getFactorNumber(factor) }}</span>
+                  <span>{{ factor.name }}</span>
                 </span>
               </li>
             </ul>
           </div>
         </div>
-        <q-btn
-            label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
-            class="done-button q-mt-lg"
-            color="warning"
-            @click="openSensitivityDialog"
-        />
+
+        <!-- КНОПКИ ЗАВЕРШЕНИЯ И ПЕРЕСЧЁТА -->
+        <div class="q-mt-md row q-gutter-md">
+
+          <q-btn
+              v-if="showSensitivityButton"
+              label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
+              class="done-button"
+              color="warning"
+              @click="openSensitivityDialog"
+          />
+         </div>
+
+        <!-- АЛЬТЕРНАТИВЫ -->
         <div class="alternatives q-mt-lg">
           <div class="text-h6">АЛЬТЕРНАТИВЫ</div>
-          <div v-if="alternatives.length === 0">Альтернативы не найдены</div>
+          <div v-if="sortedAlternatives.length === 0">Альтернативы не найдены</div>
 
           <div
-            class="alternative old-alt"
-            v-for="(alt, index) in alternatives"
-            :key="'alt-' + index"
+              class="alternative"
+              v-for="(alt, index) in sortedAlternatives"
+              :key="'alt-' + index"
+              :class="{ 'old-alt': showAll && isOldAlternative(alt) }"
           >
             <div class="alt-id">A{{ index + 1 }}</div>
             <div class="alt-data">
               <div class="alt-numbers">
-                <div>d+ = {{ alt.d_plus?.toFixed(3) }}</div>
-                <div>d- = {{ alt.d_minus?.toFixed(3) }}</div>
-                <div>d* = {{ alt.d_star?.toFixed(3) }}</div>
+                <div>d+ = {{ alt.dplus?.toFixed(3) }}</div>
+                <div>d- = {{ alt.dminus?.toFixed(3) }}</div>
+                <div>d* = {{ alt.closeness?.toFixed(3) }}</div>
               </div>
               <div class="alt-description">
-                {{ alt.factor1 }} и {{ alt.factor2 }}
+                {{ alt.internalFactor }} и {{ alt.externalFactor }}
               </div>
             </div>
           </div>
         </div>
+
+
+
+        <q-dialog v-model="showWarningDialog" persistent>
+          <q-card style="width: 400px; max-width: 90%;">
+            <q-card-section class="text-h6 text-negative">
+              Внимание: Низкая разность между альтернативами
+            </q-card-section>
+            <q-card-section>
+              Найдены альтернативы, у которых d* меньше {{ minDifferenceThreshold }}:
+              <ul>
+                <li v-for="(pair, i) in lowDifferenceAlternatives" :key="i">
+                  A{{ pair[0] + 1 }} и A{{ pair[1] + 1 }} — Δ = {{
+                    (sortedAlternatives[pair[0]]?.closeness != null &&
+                        sortedAlternatives[pair[1]]?.closeness != null)
+                        ? Math.abs(sortedAlternatives[pair[0]].closeness - sortedAlternatives[pair[1]].closeness).toFixed(3)
+                        : 'нет данных'
+                  }}
+                </li>
+              </ul>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="ОК" color="primary" v-close-popup />
+            </q-card-actions>
+          </q-card>
+
+        </q-dialog>
+
         <q-dialog v-model="showSensitivityDialog">
           <q-card style="width: 500px; max-width: 90%;">
             <q-card-section class="text-h6 text-primary">
@@ -116,31 +149,114 @@
             </q-card-actions>
           </q-card>
         </q-dialog>
+
+        <q-dialog v-model="showSensitivityDialog">
+          <q-card style="width: 500px; max-width: 90%;">
+            <q-card-section>
+              <div class="text-h6 text-orange-8">Анализ чувствительности</div>
+            </q-card-section>
+            <q-card-section>
+              <div v-if="sensitivityAnalysis.length === 0">Идёт анализ чувствительности...</div>
+              <ul v-else>
+                <li v-for="(entry, index) in sensitivityAnalysis" :key="index">
+                  {{ entry.description }}
+                </li>
+              </ul>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Закрыть" color="primary" v-close-popup />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
       </q-page>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
-const route = useRoute()
-const sessionId = route.params.sessionId || 1
+const sessionName = ref(localStorage.getItem('sessionName'))
+const tab = ref('results')
+const router = useRouter()
+const role = localStorage.getItem('roles')
 
-const sessionName = ref('')
 const strongFactors = ref([])
 const weakFactors = ref([])
 const opportunityFactors = ref([])
 const threatFactors = ref([])
 const alternatives = ref([])
-const factorNumbers = ref({
-  strong: [],
-  weak: [],
-  opportunity: [],
-  threat: []
-})
+const previousAlternatives = ref([])
+const showAll = ref(false)
+const showAltDialog = ref(false)
+const selectedAlt = ref(null)
+const selectedAltReveal = ref({ internal: 100, external: 100 })
+const revealMap = ref({})
+
+const alternativeDifference = ref(parseFloat(localStorage.getItem('alternativeDifference') || '0.15'))
+const minDifferenceThreshold = alternativeDifference
+const showWarningDialog = ref(false)
+const lowDifferenceAlternatives = ref([])
+const showSensitivityDialog = ref(false)
+const sensitivityResults = ref([])
+const sensitivityAnalysis = ref([])
+
+const fetchFactors = async () => {
+  try {
+    const sessionId = localStorage.getItem('sessionId')
+    const versionId = localStorage.getItem('versionId')
+    const token = localStorage.getItem('token')
+    const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const all = response.data
+    strongFactors.value = all.filter(f => f.type === 'strong')
+    weakFactors.value = all.filter(f => f.type === 'weak')
+    opportunityFactors.value = all.filter(f => f.type === 'opportunity')
+    threatFactors.value = all.filter(f => f.type === 'threat')
+  } catch (err) {
+    console.error('Ошибка загрузки факторов:', err)
+  }
+}
+
+const fetchAlternatives = async () => {
+  const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
+  const token = localStorage.getItem('token')
+  const { data } = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  previousAlternatives.value = data
+}
+
+const handleDone = async () => {
+  const token = localStorage.getItem('token')
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+
+  const { data } = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { sessionId, versionId }
+  })
+
+  alternatives.value = data
+  showAll.value = true
+  updateLowDifferenceAlternatives()
+
+  if (lowDifferenceAlternatives.value.length > 0) {
+    showWarningDialog.value = true
+  }
+}
+const openAltDialog = (alt) => {
+  selectedAlt.value = alt
+  const key = `${alt.internalFactor}|${alt.externalFactor}`
+  const prev = revealMap.value[key] || { internal: 100, external: 100 }
+  selectedAltReveal.value = { ...prev }
+  showAltDialog.value = true
+}
+
+
 const openSensitivityDialog = async () => {
   showSensitivityDialog.value = true
   sensitivityAnalysis.value = []
@@ -160,194 +276,73 @@ const openSensitivityDialog = async () => {
     sensitivityAnalysis.value = [{ description: 'Ошибка при анализе чувствительности' }]
   }
 }
-const getFactorNumber = (factor, section, index) => {
-  return factorNumbers.value[section]?.[index] ?? '-'
-}
 
-const loadSummary = async () => {
-  try {
-    const token = localStorage.getItem('token')
-    const versionId = route.params.versionId
-    const sessionId = localStorage.getItem('sessionId')
-    const { data } = await axios.get(`http://localhost:8080/api/session/${sessionId}/summary?versionId=${versionId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
+const openSensitivity = () => {
+  sensitivityResults.value = []
+  for (let i = 0; i < sortedAlternatives.value.length; i++) {
+    for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
+      const alt1 = sortedAlternatives.value[i]
+      const alt2 = sortedAlternatives.value[j]
+      if (alt1?.closeness != null && alt2?.closeness != null) {
+        const diff = Math.abs(alt1.closeness - alt2.closeness)
+        if (diff < minDifferenceThreshold.value) {
+          sensitivityResults.value.push({ alt1, alt2, diff })
+        }
       }
-    })
-    sessionName.value = data.sessionName
-    strongFactors.value = data.factors.strong
-    weakFactors.value = data.factors.weak
-    opportunityFactors.value = data.factors.opportunity
-    threatFactors.value = data.factors.threat
-    factorNumbers.value = data.factorNumbers
-    alternatives.value = data.alternatives
-  } catch (err) {
-    console.error('Ошибка при загрузке summary:', err)
+    }
   }
+  showSensitivityDialog.value = true
 }
 
-onMounted(loadSummary)
+const isOldAlternative = (alt) => {
+  return previousAlternatives.value.some(old =>
+      old.internalFactor === alt.internalFactor &&
+      old.externalFactor === alt.externalFactor
+  )
+}
+
+const getFactorNumber = factor => factor.massCenter ? factor.massCenter.toFixed(2) : '-'
+
+const combinedAlternatives = computed(() => showAll.value ? alternatives.value : previousAlternatives.value)
+const sortedAlternatives = computed(() => [...combinedAlternatives.value].sort((a, b) => b.closeness - a.closeness))
+
+const showSensitivityButton = computed(() => lowDifferenceAlternatives.value.length > 0)
+
+const isSimilarAlternative = (alt) => {
+  return lowDifferenceAlternatives.value.some(([i, j]) => {
+    return [sortedAlternatives.value[i], sortedAlternatives.value[j]].some(a =>
+        a.internalFactor === alt.internalFactor && a.externalFactor === alt.externalFactor
+    )
+  })
+}
+
+const updateLowDifferenceAlternatives = () => {
+  const pairs = []
+  for (let i = 0; i < sortedAlternatives.value.length; i++) {
+    const a1 = sortedAlternatives.value[i]
+    if (a1?.dplus == null || a1?.dminus == null || a1?.closeness == null) continue
+    for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
+      const a2 = sortedAlternatives.value[j]
+      if (a2?.dplus == null || a2?.dminus == null || a2?.closeness == null) continue
+      const diff = Math.abs(a1.closeness - a2.closeness)
+      if (diff < minDifferenceThreshold.value) {
+        pairs.push([i, j])
+      }
+    }
+  }
+  lowDifferenceAlternatives.value = pairs
+}
+
+onMounted(async () => {
+  await fetchFactors()
+  await handleDone()
+})
 </script>
 
 
-
-<style>
-.q-toolbar {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 10px;
-}
-
-.grid-analysis {
-  display: grid;
-  grid-template-columns: repeat(2, 400px);
-  grid-template-rows: auto; /* Автоматическая высота строк */
-  gap: 10px;
-  width: 100%;
-  max-width: none;
-  justify-content: center;
-}
-
-.factor-item .q-item__section--side {
-  display: flex;
-  align-items: center;
-}
-
-.cell {
-  padding: 16px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: stretch;
-  min-height: 350px;
-  /* min-height: 300px; */ /* Убираем или комментируем min-height */
-}
-
-.centered-list { /* или .cell ul */
-  list-style-position: outside;
-  width: 100%;
-  margin-bottom: 0;
-  padding-left: 16px;
-  flex-grow: 1;
-  margin-top: 16px;
-  list-style-type: none;
-}
-
-.cell ul {
-  padding-left: 16px;
-  list-style-position: outside;
-  width: 100%;
-  margin-bottom: 0;
-  flex-grow: 1;
-  margin-top: 16px; /* Добавляем отступ сверху списка */
-  overflow-y: auto;
-}
-
-.bg-dark-blue {
-  background: #02486c;
-  color: white;
-}
-
-.bg-dark-red {
-  background: #02486c;
-  color: white;
-}
-
-.bg-light-grey {
-  background: #E0E0E0;
-}
-
-.header {
-  font-weight: bold;
-  margin-bottom: 8px;
-  text-align: center;
-  width: 100%;
-  font-size: 1em;
-}
-
-/*стиль чтобы отключить кликабельность*/
-.non-selectable-tabs .q-tab {
-  pointer-events: none;
-  cursor: default;
-}
-
-.alternatives {
-  width: 100%;
-  max-width: 800px;
-  min-width: 800px;
-}
-
-.alternative {
-  display: flex;
-  justify-content: space-between;
-  background: #ECECEC;
-  padding: 10px;
-  border-radius: 8px;
-  margin-top: 10px;
-}
-
-.alt-metrics {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-right: 35px;
-  margin-left: 25px;
-  font-weight: bold;
-}
-
-.alt-text {
-  overflow-y: auto;
-  max-width: 600px;
-}
-
-.cell li {
-  text-align: left;
-  font-weight: 500; /*  Делаем текст немного жирнее  */
-  font-size: 0.8em;
-  word-wrap: break-word;
-  margin-bottom: 8px;
-}
-
-.list-item-small {
-  word-wrap: break-word;
-  margin-bottom: 8px;
-  font-weight: 500; /*  Делаем текст немного жирнее  */
-}
-
-/* Текст табов такого же размера, как и текст списка */
-.tab-text-size .q-tab__label {
-  font-size: 0.9em;
-  font-weight: 500;
-  text-transform: none;
-}
-
-.bg-dark-blue {
-  background: #02486c;
-  color: white;
-}
-
-.q-card-actions-custom .q-btn {
-  margin: 0 16px; /* добавляем отступ между кнопками */
-}
-
-.add-dialog .q-card-actions .q-btn {
-  margin: 0 8px; /* добавляем отступ между кнопками */
-}
-
-.q-tabs-container {
-  width: 810px; /*  Ширина квадрата + gap  */
-  margin-bottom: 10px; /* Отступ снизу */
-}
-
-.numbered-factor .number {
-  width: 6em; /* Задайте фиксированную ширину, чтобы вместить самое длинное число */
-  text-align: left; /* Выравниваем текст по правому краю */
-  margin-right: 0.7em; /* Небольшой отступ, если нужно */
-}
+<style scoped>
 .old-alt {
-  background-color: #ececec !important;
+  background-color: #fff4c2 !important;
 }
 .alt-id {
   width: 40px;

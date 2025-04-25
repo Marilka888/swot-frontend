@@ -95,6 +95,9 @@ async function fetchSession() {
       }
     })
     session.value = response.data
+
+    localStorage.setItem('sessionName', response.data.name)
+
   } catch (e) {
     console.error('Ошибка при загрузке сессии:', e)
   }
