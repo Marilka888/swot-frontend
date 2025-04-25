@@ -129,8 +129,7 @@
               Внимание: Низкая разность между альтернативами
             </q-card-section>
             <q-card-section>
-              Найдены альтернативы, у которых |d+ - d-| меньше {{ minDifferenceThreshold }}:
-
+              Найдены альтернативы, у которых d* меньше {{ minDifferenceThreshold }}:
               <ul>
                 <li v-for="(pair, i) in lowDifferenceAlternatives" :key="i">
                   A{{ pair[0] + 1 }} и A{{ pair[1] + 1 }} — Δ = {{
@@ -141,8 +140,6 @@
                   }}
                 </li>
               </ul>
-
-
             </q-card-section>
             <q-card-actions align="right">
               <q-btn flat label="ОК" color="primary" v-close-popup />
@@ -155,271 +152,270 @@
         <div class="q-mt-md row justify-end" v-if="!showAll">
           <q-btn label="ПОКАЗАТЬ ВСЕ" class="done-button" @click="handleDone" />
         </div>
+
+        <q-dialog v-model="showSensitivityDialog">
+          <q-card style="width: 500px; max-width: 90%;">
+            <q-card-section class="text-h6 text-primary">
+              Анализ чувствительности
+            </q-card-section>
+            <q-card-section>
+              <div v-if="sensitivityResults.length === 0">
+                Анализ чувствительности не выявил похожих альтернатив.
+              </div>
+              <div v-else>
+                <p>Сравнение альтернатив с учётом изменения коэффициента:</p>
+                <ul>
+                  <li v-for="(pair, index) in sensitivityResults" :key="index">
+                    {{ pair.alt1.internalFactor }} и {{ pair.alt1.externalFactor }} |
+                    {{ pair.alt2.internalFactor }} и {{ pair.alt2.externalFactor }} —
+                    <span v-if="pair.comparison === 0">равны</span>
+                    <span v-else-if="pair.comparison === 1">первая выше</span>
+                    <span v-else>вторая выше</span>
+                  </li>
+                </ul>
+              </div>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Закрыть" v-close-popup />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
+        <q-dialog v-model="showSensitivityDialog">
+          <q-card style="width: 500px; max-width: 90%;">
+            <q-card-section>
+              <div class="text-h6 text-orange-8">Анализ чувствительности</div>
+            </q-card-section>
+            <q-card-section>
+              <div v-if="sensitivityAnalysis.length === 0">Идёт анализ чувствительности...</div>
+              <ul v-else>
+                <li v-for="(entry, index) in sensitivityAnalysis" :key="index">
+                  {{ entry.description }}
+                </li>
+              </ul>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Закрыть" color="primary" v-close-popup />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
       </q-page>
     </q-page-container>
   </q-layout>
 </template>
 
-<script>
+<script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 
-export default {
-  setup() {
-    const sessionName = ref('Название сессии')
-    const tab = ref('alternatives')
-    const router = useRouter()
-    const role = localStorage.getItem('roles')
+const sessionName = ref('Название сессии')
+const tab = ref('alternatives')
+const router = useRouter()
+const role = localStorage.getItem('roles')
 
-    const strongFactors = ref([])
-    const weakFactors = ref([])
-    const opportunityFactors = ref([])
-    const threatFactors = ref([])
-    const alternatives = ref([])
-    const previousAlternatives = ref([])
-    const showAll = ref(false)
-    const showAltDialog = ref(false)
-    const selectedAlt = ref(null)
-    const selectedAltReveal = ref({ internal: 100, external: 100 })
-    const revealMap = ref({})
+const strongFactors = ref([])
+const weakFactors = ref([])
+const opportunityFactors = ref([])
+const threatFactors = ref([])
+const alternatives = ref([])
+const previousAlternatives = ref([])
+const showAll = ref(false)
+const showAltDialog = ref(false)
+const selectedAlt = ref(null)
+const selectedAltReveal = ref({ internal: 100, external: 100 })
+const revealMap = ref({})
 
-    const alternativeDifference = ref(parseFloat(localStorage.getItem('alternativeDifference') || '0.15'))
-    const minDifferenceThreshold = alternativeDifference
-    const showWarningDialog = ref(false)
-    const lowDifferenceAlternatives = ref([])
-    const showSensitivityDialog = ref(false)
-    const sensitivityResults = ref([])
+const alternativeDifference = ref(parseFloat(localStorage.getItem('alternativeDifference') || '0.15'))
+const minDifferenceThreshold = alternativeDifference
+const showWarningDialog = ref(false)
+const lowDifferenceAlternatives = ref([])
+const showSensitivityDialog = ref(false)
+const sensitivityResults = ref([])
+const sensitivityAnalysis = ref([])
 
-    const openSensitivityDialog = () => {
-      sensitivityResults.value = []
-      for (let i = 0; i < sortedAlternatives.value.length; i++) {
-        for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
-          const diff = Math.abs(sortedAlternatives.value[i].closeness - sortedAlternatives.value[j].closeness)
-          if (diff < minDifferenceThreshold.value) {
-            sensitivityResults.value.push({ index1: i, index2: j, diff })
-          }
-        }
-      }
-      showSensitivityDialog.value = true
-    }
-
-
-    const openSensitivity = () => {
-      showSensitivityDialog.value = true
-    }
-
-    const fetchFactors = async () => {
-      try {
-        const sessionId = localStorage.getItem('sessionId')
-        const versionId = localStorage.getItem('versionId')
-        const token = localStorage.getItem('token') // ← токен сохраняется после логина
-        const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-        const all = response.data
-        strongFactors.value = all.filter(f => f.type === 'strong')
-        weakFactors.value = all.filter(f => f.type === 'weak')
-        opportunityFactors.value = all.filter(f => f.type === 'opportunity')
-        threatFactors.value = all.filter(f => f.type === 'threat')
-      } catch (err) {
-        console.error('Ошибка загрузки факторов:', err)
-      }
-    }
-
-    const fetchAlternatives = async () => {
-      const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
-      const token = localStorage.getItem('token') // ← токен сохраняется после логина
-      const { data } = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      previousAlternatives.value = data
-    }
-
-    const handleDone = async () => {
-      const token = localStorage.getItem('token')
-      const sessionId = localStorage.getItem('sessionId')
-      const versionId = localStorage.getItem('versionId')
-
-      const { data } = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        params: {
-          sessionId,
-          versionId
-        }
-      })
-
-      alternatives.value = data
-      showAll.value = true
-
-      updateLowDifferenceAlternatives()
-
-      if (lowDifferenceAlternatives.value.length > 0) {
-        showWarningDialog.value = true
-      }
-    }
-
-
-    const finishSession = async () => {
-      const token = localStorage.getItem('token')
-      const sessionId = localStorage.getItem('sessionId')
-      await axios.post(`http://localhost:8080/v1/session/complete/${sessionId}`, null, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const versionId = localStorage.getItem('versionId')
-      router.push(`/history/version/${versionId}`)
-    }
-
-
-    const openAltDialog = (alt) => {
-      selectedAlt.value = alt
-      const key = `${alt.internalFactor}|${alt.externalFactor}`
-      const prev = revealMap.value[key] || { internal: 100, external: 100 }
-      selectedAltReveal.value = { ...prev }
-      showAltDialog.value = true
-    }
-
-    const saveRevealPercentages = () => {
-      const alt = selectedAlt.value
-      const key = `${alt.internalFactor}|${alt.externalFactor}`
-      revealMap.value[key] = { ...selectedAltReveal.value }
-      showAltDialog.value = false
-    }
-
-    const recalculateAlternatives = async () => {
-      const sessionId = localStorage.getItem('sessionId')
-      const versionId = localStorage.getItem('versionId')
-      const token = localStorage.getItem('token')
-
-      // Составляем массив раскрытий
-      const revealArray = Object.entries(revealMap.value).map(([key, value]) => {
-        const [internal, external] = key.split('|')
-        return {
-          internal,
-          external,
-          internalPercent: value.internal,
-          externalPercent: value.external
-        }
-      })
-
-      const payload = {
-        sessionId,
-        versionId,
-        revealList: revealArray
-      }
-
-      try {
-        const { data } = await axios.post(
-          'http://localhost:8080/api/session/recalculate',
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        )
-
-        console.log('Ответ от бэкенда:', data)
-
-        alternatives.value = data        // ⬅️ Обновляем реактивное состояние
-        showAll.value = true             // ⬅️ Включаем отображение обновлённых альтернатив
-
-      } catch (err) {
-        console.error('Ошибка при пересчёте:', err)
-      }
-    }
-
-
-
-    const isOldAlternative = (alt) => {
-      return previousAlternatives.value.some(
-        old => old.internalFactor === alt.internalFactor && old.externalFactor === alt.externalFactor
-      )
-    }
-
-    const getFactorNumber = factor => factor.massCenter ? factor.massCenter.toFixed(2) : '-'
-
-    const combinedAlternatives = computed(() => showAll.value ? alternatives.value : previousAlternatives.value)
-    const sortedAlternatives = computed(() => [...combinedAlternatives.value].sort((a, b) => b.closeness - a.closeness))
-
-
-    const showSensitivityButton = computed(() => lowDifferenceAlternatives.value.length > 0)
-
-    const isSimilarAlternative = (alt) => {
-      return lowDifferenceAlternatives.value.some(([i, j]) => {
-        return [sortedAlternatives.value[i], sortedAlternatives.value[j]].some(a =>
-          a.internalFactor === alt.internalFactor && a.externalFactor === alt.externalFactor
-        )
-      })
-    }
-
-    const updateLowDifferenceAlternatives = () => {
-      const pairs = []
-      for (let i = 0; i < sortedAlternatives.value.length; i++) {
-        const a1 = sortedAlternatives.value[i]
-        if (a1?.dplus == null || a1?.dminus == null || a1?.closeness == null) continue
-        for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
-          const a2 = sortedAlternatives.value[j]
-          if (a2?.dplus == null || a2?.dminus == null || a2?.closeness == null) continue
-          const diff = Math.abs(a1.closeness - a2.closeness)
-          if (diff < minDifferenceThreshold.value) {
-            pairs.push([i, j])
-          }
-        }
-      }
-      lowDifferenceAlternatives.value = pairs
-    }
-
-
-    onMounted(async () => {
-      await fetchFactors()
-      await fetchAlternatives()
+const fetchFactors = async () => {
+  try {
+    const sessionId = localStorage.getItem('sessionId')
+    const versionId = localStorage.getItem('versionId')
+    const token = localStorage.getItem('token')
+    const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
+      headers: { Authorization: `Bearer ${token}` }
     })
-
-    return {
-      updateLowDifferenceAlternatives,
-      role,
-      openSensitivity, sessionName,
-      showSensitivityDialog,
-      sensitivityResults,
-      openSensitivityDialog,
-      tab,
-      strongFactors,
-      weakFactors,
-      opportunityFactors,
-      threatFactors,
-      getFactorNumber,
-      alternatives,
-      handleDone,
-      showWarningDialog,
-      lowDifferenceAlternatives,
-      minDifferenceThreshold,
-      showAll,
-      previousAlternatives,
-      isOldAlternative,
-      combinedAlternatives,
-      sortedAlternatives,
-      finishSession,
-      openAltDialog,
-      saveRevealPercentages,
-      showAltDialog,
-      selectedAlt,
-      selectedAltReveal,
-      revealMap,
-      recalculateAlternatives,
-      showSensitivityButton,
-      isSimilarAlternative,
-      alternativeDifference
-    }
+    const all = response.data
+    strongFactors.value = all.filter(f => f.type === 'strong')
+    weakFactors.value = all.filter(f => f.type === 'weak')
+    opportunityFactors.value = all.filter(f => f.type === 'opportunity')
+    threatFactors.value = all.filter(f => f.type === 'threat')
+  } catch (err) {
+    console.error('Ошибка загрузки факторов:', err)
   }
 }
+
+const fetchAlternatives = async () => {
+  const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
+  const token = localStorage.getItem('token')
+  const { data } = await axios.post('http://localhost:8080/v1/session/alternatives', selectedFromStorage, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  previousAlternatives.value = data
+}
+
+const handleDone = async () => {
+  const token = localStorage.getItem('token')
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+
+  const { data } = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { sessionId, versionId }
+  })
+
+  alternatives.value = data
+  showAll.value = true
+  updateLowDifferenceAlternatives()
+
+  if (lowDifferenceAlternatives.value.length > 0) {
+    showWarningDialog.value = true
+  }
+}
+
+const finishSession = async () => {
+  const token = localStorage.getItem('token')
+  const sessionId = localStorage.getItem('sessionId')
+  await axios.post(`http://localhost:8080/v1/session/complete/${sessionId}`, null, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  const versionId = localStorage.getItem('versionId')
+  router.push(`/history/version/${versionId}`)
+}
+
+const openAltDialog = (alt) => {
+  selectedAlt.value = alt
+  const key = `${alt.internalFactor}|${alt.externalFactor}`
+  const prev = revealMap.value[key] || { internal: 100, external: 100 }
+  selectedAltReveal.value = { ...prev }
+  showAltDialog.value = true
+}
+
+const saveRevealPercentages = () => {
+  const alt = selectedAlt.value
+  const key = `${alt.internalFactor}|${alt.externalFactor}`
+  revealMap.value[key] = { ...selectedAltReveal.value }
+  showAltDialog.value = false
+}
+
+const recalculateAlternatives = async () => {
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+  const token = localStorage.getItem('token')
+
+  const revealArray = Object.entries(revealMap.value).map(([key, value]) => {
+    const [internal, external] = key.split('|')
+    return {
+      internal,
+      external,
+      internalPercent: value.internal,
+      externalPercent: value.external
+    }
+  })
+
+  const payload = { sessionId, versionId, revealList: revealArray }
+
+  try {
+    const { data } = await axios.post('http://localhost:8080/api/session/recalculate', payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    console.log('Ответ от бэкенда:', data)
+    alternatives.value = data
+    showAll.value = true
+  } catch (err) {
+    console.error('Ошибка при пересчёте:', err)
+  }
+}
+
+const openSensitivityDialog = async () => {
+  showSensitivityDialog.value = true
+  sensitivityAnalysis.value = []
+
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+  const token = localStorage.getItem('token')
+
+  try {
+    const { data } = await axios.post('http://localhost:8080/api/session/sensitivity-analysis',
+      { sessionId, versionId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    sensitivityAnalysis.value = data
+  } catch (err) {
+    console.error('Ошибка при анализе чувствительности:', err)
+    sensitivityAnalysis.value = [{ description: 'Ошибка при анализе чувствительности' }]
+  }
+}
+
+const openSensitivity = () => {
+  sensitivityResults.value = []
+  for (let i = 0; i < sortedAlternatives.value.length; i++) {
+    for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
+      const alt1 = sortedAlternatives.value[i]
+      const alt2 = sortedAlternatives.value[j]
+      if (alt1?.closeness != null && alt2?.closeness != null) {
+        const diff = Math.abs(alt1.closeness - alt2.closeness)
+        if (diff < minDifferenceThreshold.value) {
+          sensitivityResults.value.push({ alt1, alt2, diff })
+        }
+      }
+    }
+  }
+  showSensitivityDialog.value = true
+}
+
+const isOldAlternative = (alt) => {
+  return previousAlternatives.value.some(old =>
+    old.internalFactor === alt.internalFactor &&
+    old.externalFactor === alt.externalFactor
+  )
+}
+
+const getFactorNumber = factor => factor.massCenter ? factor.massCenter.toFixed(2) : '-'
+
+const combinedAlternatives = computed(() => showAll.value ? alternatives.value : previousAlternatives.value)
+const sortedAlternatives = computed(() => [...combinedAlternatives.value].sort((a, b) => b.closeness - a.closeness))
+
+const showSensitivityButton = computed(() => lowDifferenceAlternatives.value.length > 0)
+
+const isSimilarAlternative = (alt) => {
+  return lowDifferenceAlternatives.value.some(([i, j]) => {
+    return [sortedAlternatives.value[i], sortedAlternatives.value[j]].some(a =>
+      a.internalFactor === alt.internalFactor && a.externalFactor === alt.externalFactor
+    )
+  })
+}
+
+const updateLowDifferenceAlternatives = () => {
+  const pairs = []
+  for (let i = 0; i < sortedAlternatives.value.length; i++) {
+    const a1 = sortedAlternatives.value[i]
+    if (a1?.dplus == null || a1?.dminus == null || a1?.closeness == null) continue
+    for (let j = i + 1; j < sortedAlternatives.value.length; j++) {
+      const a2 = sortedAlternatives.value[j]
+      if (a2?.dplus == null || a2?.dminus == null || a2?.closeness == null) continue
+      const diff = Math.abs(a1.closeness - a2.closeness)
+      if (diff < minDifferenceThreshold.value) {
+        pairs.push([i, j])
+      }
+    }
+  }
+  lowDifferenceAlternatives.value = pairs
+}
+
+onMounted(async () => {
+  await fetchFactors()
+  await fetchAlternatives()
+})
 </script>
+
 
 <style scoped>
 .old-alt {
