@@ -161,7 +161,7 @@
                 v-model.number="deltaAlternative"
                 :label="`Δ альтернатив (максимум ${maxCloseness.toFixed(3)})`"
                 type="number"
-                :step="0.01"
+                :step="0.001"
                 :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= maxCloseness || 'Превышает максимум']"
               />
               <q-input
