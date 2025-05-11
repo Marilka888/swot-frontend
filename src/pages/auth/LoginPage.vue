@@ -38,7 +38,7 @@ const login = async () => {
     localStorage.setItem('token', response.data.token)
     localStorage.setItem('roles', response.data.roles)
     localStorage.setItem('refreshToken', response.data.refreshToken)
-    if (!response.data.reg) {
+    if (!response.data.firstLogin) {
       router.push('/change-password');
       return;
     }
