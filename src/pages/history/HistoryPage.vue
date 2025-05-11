@@ -59,18 +59,18 @@
               />
               <div v-for="userId in selectedUsers" :key="userId" class="row items-center q-gutter-sm">
                 <div class="text-subtitle2">{{ getUserNameById(userId) }}</div>
-                <q-input
-                  dense
+                <q-select
                   v-model="userCoefficients[userId]"
-                  type="number"
-                  step="0.01"
+                  :options="[1,2,3,4,5,6,7,8,9,10]"
                   label="Коэффициент"
-                  style="width: 120px"
+                  dense
+                  emit-value
+                  map-options
+                  style="width: 100px"
+                  :rules="[val => !!val || 'Обязательное поле']"
                 />
               </div>
               <q-input filled v-model="notes" label="заметки к сессии" type="textarea"/>
-              <q-input filled v-model="alternativeDifference" label="Δ альтернатив (коэф. разности)" type="number" step="0.001" />
-              <q-input filled v-model="trapezoidDifference" label="Δ трапеций (коэф. разности)" type="number" step="0.001" />
             </q-card-section>
 
             <q-card-actions align="center" class="q-px-md q-pb-md">
@@ -107,22 +107,6 @@ function getUserNameById(id) {
   const user = userOptions.value.find(u => u.id === id)
   return user ? user.label : ''
 }
-
-function normalizeUserCoefficients() {
-  const ids = selectedUsers.value
-  const count = ids.length
-  if (count === 0) return
-
-  const total = ids.reduce((sum, id) => sum + parseFloat(userCoefficients.value[id] || 1), 0)
-  ids.forEach(id => {
-    const raw = parseFloat(userCoefficients.value[id] || 1)
-    userCoefficients.value[id] = ((raw / total) * count).toFixed(2)
-  })
-}
-
-watch(userCoefficients, () => {
-  normalizeUserCoefficients()
-}, { deep: true })
 
 async function fetchUsers() {
   try {
@@ -170,17 +154,6 @@ async function fetchSessions() {
 
 async function saveSession() {
   const ids = selectedUsers.value
-  const count = ids.length
-  const total = ids.reduce((sum, id) => sum + parseFloat(userCoefficients.value[id] || 1), 0)
-
-  if (Math.abs(total - count) > 0.01) {
-    normalizeUserCoefficients()
-    $q.notify({
-      type: 'warning',
-      message: `Коэффициенты были автоматически перераспределены так, чтобы сумма была равна ${count}`,
-      position: 'top'
-    })
-  }
 
   try {
     const payload = {
