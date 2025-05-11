@@ -85,10 +85,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useQuasar } from 'quasar'
 
+const $q = useQuasar()
 const router = useRouter()
 const showCreate = ref(false)
 const sessionName = ref('')
@@ -100,12 +102,28 @@ const sessions = ref([])
 const userOptions = ref([])
 const selectedUsers = ref([])
 const userCoefficients = ref({})
+
 function getUserNameById(id) {
   const user = userOptions.value.find(u => u.id === id)
   return user ? user.label : ''
 }
 
-// Загрузка пользователей из компании
+function normalizeUserCoefficients() {
+  const ids = selectedUsers.value
+  const count = ids.length
+  if (count === 0) return
+
+  const total = ids.reduce((sum, id) => sum + parseFloat(userCoefficients.value[id] || 1), 0)
+  ids.forEach(id => {
+    const raw = parseFloat(userCoefficients.value[id] || 1)
+    userCoefficients.value[id] = ((raw / total) * count).toFixed(2)
+  })
+}
+
+watch(userCoefficients, () => {
+  normalizeUserCoefficients()
+}, { deep: true })
+
 async function fetchUsers() {
   try {
     const token = localStorage.getItem('token')
@@ -122,9 +140,8 @@ async function fetchUsers() {
     console.error('Ошибка при загрузке пользователей', e)
   }
 }
+
 function goToSession(sessionId) {
-  console.log("sessionId")
-  console.log(sessionId)
   router.push(`/history/${sessionId}`)
 }
 
@@ -139,47 +156,54 @@ function formatDate(dateStr) {
 
 async function fetchSessions() {
   try {
-    const token = localStorage.getItem('token') // ← токен сохраняется после логина
+    const token = localStorage.getItem('token')
     const response = await axios.get('http://localhost:8080/v1/sessions', {
       headers: {
         Authorization: `Bearer ${token}`
       }
     })
     sessions.value = response.data
-    console.log(sessions)
   } catch (error) {
     console.error('Ошибка при загрузке сессий:', error)
   }
 }
 
-
 async function saveSession() {
+  const ids = selectedUsers.value
+  const count = ids.length
+  const total = ids.reduce((sum, id) => sum + parseFloat(userCoefficients.value[id] || 1), 0)
+
+  if (Math.abs(total - count) > 0.01) {
+    normalizeUserCoefficients()
+    $q.notify({
+      type: 'warning',
+      message: `Коэффициенты были автоматически перераспределены так, чтобы сумма была равна ${count}`,
+      position: 'top'
+    })
+  }
+
   try {
     const payload = {
       name: sessionName.value,
-      admin: admin.value, // теперь это id выбранного пользователя
+      admin: admin.value,
       notes: notes.value,
       alternativeDifference: parseFloat(alternativeDifference.value),
       trapezoidDifference: parseFloat(trapezoidDifference.value),
-      participants: selectedUsers.value.map(id => ({
+      participants: ids.map(id => ({
         userId: id,
-        coefficient: parseFloat(userCoefficients[id] || 1.0)
+        coefficient: parseFloat(userCoefficients.value[id])
       }))
     }
 
-    // Отправка на бэкенд, ожидание sessionId и versionId в ответе
-    const token = localStorage.getItem('token') // ← токен сохраняется после логина
-    const response = await axios.post('http://localhost:8080/v1/sessions/create', payload,{
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    const token = localStorage.getItem('token')
+    const response = await axios.post('http://localhost:8080/v1/sessions/create', payload, {
+      headers: { Authorization: `Bearer ${token}` }
     })
-    // Сохраняем в localStorage
-    localStorage.setItem("alternativeDifference", payload.alternativeDifference)
 
     const createdSession = response.data
     localStorage.setItem('sessionId', createdSession.sessionId)
     localStorage.setItem('versionId', createdSession.versionId)
+    localStorage.setItem("alternativeDifference", payload.alternativeDifference)
 
     showCreate.value = false
     await fetchSessions()
@@ -187,8 +211,6 @@ async function saveSession() {
     console.error('Ошибка при создании сессии:', error)
   }
 }
-
-
 
 onMounted(() => {
   fetchSessions()
