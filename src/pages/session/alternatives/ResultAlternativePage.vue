@@ -64,17 +64,22 @@
           </div>
         </div>
 
-        <!-- КНОПКИ ЗАВЕРШЕНИЯ И ПЕРЕСЧЁТА -->
         <div class="q-mt-md row q-gutter-md">
-
           <q-btn
-              v-if="showSensitivityButton"
-              label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
-              class="done-button"
-              color="warning"
-              @click="openSensitivityDialog"
+            label="ВЫГРУЗКА РЕЗУЛЬТАТОВ"
+            class="done-button"
+            color="primary"
+            icon="picture_as_pdf"
+            @click="downloadResultsPdf"
           />
-         </div>
+          <q-btn
+            label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
+            class="done-button"
+            color="warning"
+            @click="openSensitivityDialog"
+          />
+        </div>
+
 
         <!-- АЛЬТЕРНАТИВЫ -->
         <div class="alternatives q-mt-lg">
@@ -225,6 +230,13 @@ const fetchFactors = async () => {
   } catch (err) {
     console.error('Ошибка загрузки факторов:', err)
   }
+}
+const downloadResultsPdf = () => {
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+
+  const url = `http://localhost:8080/v1/sessions/results/pdf?sessionId=${sessionId}&versionId=${versionId}`
+  window.open(url, '_blank')
 }
 
 const fetchAlternatives = async () => {

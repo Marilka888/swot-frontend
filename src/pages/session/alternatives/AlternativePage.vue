@@ -180,26 +180,32 @@
         </q-dialog>
 
 
-        <q-dialog v-model="showSensitivityDialog">
-          <q-card style="width: 500px; max-width: 90%;">
-            <q-card-section>
-              <div class="text-h6 text-orange-8">Анализ чувствительности</div>
+        <q-dialog v-model="showSensitivityDialog" persistent>
+          <q-card style="width: auto; min-width: 800px; max-width: 95vw;">
+            <q-card-section class="text-h6 text-primary">
+              Анализ чувствительности
             </q-card-section>
+
             <q-card-section>
-              <div v-if="sensitivityAnalysis.length === 0">Идёт анализ чувствительности...</div>
-              <q-markup-table dense flat bordered>
+              <q-markup-table flat bordered dense style="width: 100%">
                 <thead>
-                <tr>
-                  <th>Сравнение альтернатив</th>
-                  <th>Левая альтернатива приоритетнее</th>
+                <tr class="text-center">
+                  <th style="width: 40%">Сравнение альтернатив</th>
+                  <th>Левая приоритетнее</th>
                   <th>Одинаковы</th>
-                  <th>Правая альтернатива приоритетнее</th>
+                  <th>Правая приоритетнее</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="(entry, index) in sensitivityAnalysis" :key="index">
+                <tr v-for="(entry, index) in sensitivityAnalysis" :key="index" class="text-center">
                   <td>
-                    {{ `A${index + 1}(${entry.alt1.externalFactor} и ${entry.alt1.internalFactor}) vs A${index + 2}(${entry.alt2.externalFactor} и ${entry.alt2.internalFactor})` }}
+                    <div class="alt-label">
+                      A{{ index + 1 }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }})
+                    </div>
+                    <div class="vs-label">vs</div>
+                    <div class="alt-label">
+                      A{{ index + 2 }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }})
+                    </div>
                   </td>
                   <td>{{ entry.lesser }}</td>
                   <td>{{ entry.equal }}</td>
@@ -207,14 +213,22 @@
                 </tr>
                 </tbody>
               </q-markup-table>
-
-
             </q-card-section>
+
             <q-card-actions align="right">
-              <q-btn flat label="Закрыть" color="primary" v-close-popup />
+              <q-btn
+                flat
+                icon="picture_as_pdf"
+                label="Выгрузить PDF"
+                color="primary"
+                @click="downloadSensitivityPdf"
+              />
+              <q-btn flat label="Закрыть" v-close-popup />
             </q-card-actions>
+
           </q-card>
         </q-dialog>
+
       </q-page>
     </q-page-container>
   </q-layout>
@@ -261,6 +275,18 @@ const openSensitivitySetupDialog = () => {
   deltaAlternative.value = 0
   factorDistance.value = 0
   showSensitivitySetupDialog.value = true
+}
+
+const downloadSensitivityPdf = () => {
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+
+  const delta = deltaAlternative.value ?? 0
+  const distance = factorDistance.value ?? 0
+
+  const url = `http://localhost:8080/v1/sessions/sensitivity-analysis/pdf?sessionId=${sessionId}&versionId=${versionId}&delta=${delta}&factorDistance=${distance}`
+
+  window.open(url, '_blank')
 }
 
 const submitSensitivityConfig = async () => {
@@ -503,6 +529,22 @@ onMounted(async () => {
   font-weight: 400;
 }
 
+.alt-label {
+  width: 150px; /* или 160px — подбери под дизайн */
+  margin: 0 auto;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.vs-label {
+  margin: 4px 0;
+  font-weight: bold;
+  color: #666;
+  text-align: center;
+}
 .q-toolbar {
   width: 100%;
   display: flex;
