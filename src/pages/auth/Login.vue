@@ -75,17 +75,20 @@ export default {
   },
   methods: {
     authenticate() {
-      let loginInfo = {
-        'password': this.form.password,
-        'phone': this.form.phone,
+      const loginInfo = {
+        password: this.form.password,
+        phone: this.form.phone,
       }
 
       api.post(`http://localhost:8089/api/auth/authenticate`, loginInfo)
         .then(response => {
-          api.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem("token")}`;
           localStorage.setItem('token', response.data.token);
-          if (response.data.role === "CLIENT") {
-            this.$router.push("/profile");
+          api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+
+          // Перенаправление на смену пароля при первом входе
+          if (response.data.isReg) {
+            this.$router.push('/change-password');
+            return;
           }
           if (response.data.role === "ADMIN") {
             this.$router.push("/admin");
@@ -94,7 +97,12 @@ export default {
             this.$router.push("/employee");
           }
         })
+        .catch(err => {
+          console.error(err);
+          this.$q.notify({ type: 'negative', message: 'Ошибка авторизации' });
+        });
     }
+
   },
   watch: {
     $route() {

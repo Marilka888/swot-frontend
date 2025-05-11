@@ -33,10 +33,25 @@
       <q-card class="q-pa-md bg-grey-3 q-pt-xl" style="width: 300px; border-radius: 20px">
         <q-card-section class="column items-center q-gutter-md">
           <q-avatar size="80px" color="white"/>
-          <q-input v-model="newUser.name" label="ФИО" filled/>
-          <q-input v-model="newUser.username" label="логин" filled/>
-          <q-input v-model="newUser.role" label="роль" filled/>
-          <q-btn label="СОЗДАТЬ" class="bg-white text-black q-mt-sm" @click="createUser"/>
+
+          <q-input v-model="newUser.name" label="ФИО" filled class="full-width"/>
+          <q-input v-model="newUser.username" label="Логин" filled class="full-width"/>
+
+          <q-select
+            v-model="newUser.role"
+            :options="roles"
+            label="Роль"
+            filled
+            class="full-width"
+            emit-value
+            map-options
+          />
+
+          <q-btn
+            label="СОЗДАТЬ"
+            class="bg-white text-black q-mt-sm"
+            @click="createUser"
+          />
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -128,6 +143,10 @@ export default {
 
     return {
       newUser,
+      roles: [
+        { label: 'Пользователь', value: 'USER' },
+        { label: 'Администратор', value: 'ADMIN' }
+      ],
       selectedUser,
       showCreate,
       updateUser,
