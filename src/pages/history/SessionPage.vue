@@ -12,10 +12,15 @@
             {{ session.notes }}
           </div>
 
-          <div class="q-mb-sm h3">
-            Δ альтернатив: {{ session.alternativeDifference?.toFixed(3) ?? '—' }}<br>
-            Δ трапеций: {{ session.trapezoidDifference?.toFixed(3) ?? '—' }}
-          </div>
+          <div class="q-mb-sm h3">Участники:</div>
+          <q-list bordered class="bg-grey-1 q-mb-md" style="max-width: 800px; width: 100%">
+            <q-item v-for="participant in session.participants" :key="participant.id">
+              <q-item-section>
+                <q-item-label>{{ participant.fullName }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
           <div class="column q-mt-sm q-gutter-md">
             <q-card
               v-for="version in versions"
