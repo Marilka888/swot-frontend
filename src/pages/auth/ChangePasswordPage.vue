@@ -19,13 +19,9 @@ export default {
   },
   methods: {
     submit() {
-      api.post('http://localhost:8089/api/auth/change-password', { newPassword: this.newPassword })
+      api.post('http://localhost:8080/api/auth/change-password', { newPassword: this.newPassword })
         .then(() => {
-          this.$q.notify({ type: 'positive', message: 'Пароль изменён' });
-          this.$router.push('/admin'); // или куда нужно
-        })
-        .catch(() => {
-          this.$q.notify({ type: 'negative', message: 'Ошибка смены пароля' });
+          this.$router.push('/'); // правильный способ
         });
     }
   }

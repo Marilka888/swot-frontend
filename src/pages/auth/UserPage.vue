@@ -18,7 +18,16 @@
               <div class="text-subtitle2">{{ user.fullName }}</div>
               <q-btn size="sm" class="q-mt-sm" style="background-color: white" color="black" flat label="Редактировать"
                      @click="editUser(user)"/>
-            </q-card-section>
+            <q-btn
+              size="sm"
+              class="q-mt-xs"
+              color="negative"
+              flat
+              label="Удалить"
+              @click="requestDeleteUser(user.id)"
+            />
+
+          </q-card-section>
           </q-card>
         </div>
 
@@ -27,6 +36,24 @@
         </div>
       </q-page>
     </q-page-container>
+
+    <q-dialog v-model="confirmDelete" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="warning" color="red" text-color="white" class="q-mr-sm" />
+          <div class="text-h6">Удалить пользователя?</div>
+        </q-card-section>
+
+        <q-card-section>
+          Это действие необратимо.
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Отмена" color="primary" v-close-popup />
+          <q-btn flat label="Удалить" color="negative" @click="confirmDeleteUser" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Диалог создания -->
     <q-dialog v-model="showCreate">
@@ -84,6 +111,8 @@ export default {
     const showEdit = ref(false)
     const newUser = ref({name: '', login: '', coefficient: '', role: ''})
     const selectedUser = ref({})
+    const confirmDelete = ref(false)
+    const userToDelete = ref(null)
 
     function editUser(user) {
       selectedUser.value = {...user}
@@ -104,6 +133,27 @@ export default {
         console.error('Ошибка при загрузке пользователей:', error)
       }
     }
+    function requestDeleteUser(userId) {
+      userToDelete.value = userId
+      confirmDelete.value = true
+    }
+
+    async function confirmDeleteUser() {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:8080/api/admin/${userToDelete.value}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        confirmDelete.value = false;
+        userToDelete.value = null;
+        await fetchUsers();
+      } catch (error) {
+        console.error('Ошибка при удалении пользователя:', error);
+      }
+    }
+
 
     async function createUser() {
       try {
@@ -147,10 +197,14 @@ export default {
         { label: 'Пользователь', value: 'USER' },
         { label: 'Администратор', value: 'ADMIN' }
       ],
+      requestDeleteUser,
       selectedUser,
       showCreate,
+      confirmDelete,
+      userToDelete,
       updateUser,
       createUser,
+      confirmDeleteUser,
       editDialog,
       editUser,
       stakeholders,

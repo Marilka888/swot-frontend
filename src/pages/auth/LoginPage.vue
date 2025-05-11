@@ -38,7 +38,10 @@ const login = async () => {
     localStorage.setItem('token', response.data.token)
     localStorage.setItem('roles', response.data.roles)
     localStorage.setItem('refreshToken', response.data.refreshToken)
-
+    if (!response.data.reg) {
+      router.push('/change-password');
+      return;
+    }
     router.push('/')
   } catch (err) {
     console.error('Ошибка входа:', err)

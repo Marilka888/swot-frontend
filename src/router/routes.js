@@ -6,7 +6,6 @@ const routes = [
       { path: '', component: () => import('pages/history/HistoryPage.vue') },
       // { path: '', component: () => import('pages/auth/LoginPage.vue') },
       { path: 'admin', component: () => import('pages/auth/AdminPage.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
-      { path: 'change-password', component: () => import('pages/auth/ChangePasswordPage.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
       {path: '', component: () => import('pages/session/factor/FactorOneStagePage.vue')},
       {path: 'alternative', component: () => import('pages/session/alternatives/AlternativePage.vue')},
     ]
@@ -65,6 +64,14 @@ const routes = [
     component: () => import('layouts/LoginLayout.vue'),
     children: [
       { path: '', component: () => import('pages/auth/LoginPage.vue') }
+    ],
+    meta: { public: true }
+  },
+  {
+    path: '/change-password',
+    component: () => import('layouts/LoginLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/auth/ChangePasswordPage.vue') }
     ],
     meta: { public: true }
   }

@@ -86,7 +86,7 @@ export default {
           api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
 
           // Перенаправление на смену пароля при первом входе
-          if (response.data.isReg) {
+          if (!response.data.reg) {
             this.$router.push('/change-password');
             return;
           }
