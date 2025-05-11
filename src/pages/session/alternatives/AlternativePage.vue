@@ -71,11 +71,10 @@
         <div class="q-mt-md row q-gutter-md">
           <q-btn label="РЕЗУЛЬТАТЫ" class="done-button" @click="finishSession" />
           <q-btn
-            v-if="showSensitivityButton"
             label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
             class="done-button"
             color="warning"
-            @click="openSensitivityDialog"
+            @click="openSensitivitySetupDialog"
           />
           <q-btn v-if="Object.keys(revealMap).length > 0" label="ПЕРЕСЧЁТ D*" color="info" class="done-button info" @click="recalculateAlternatives" />
         </div>
@@ -126,7 +125,7 @@
         <q-dialog v-model="showWarningDialog" persistent>
           <q-card style="width: 400px; max-width: 90%;">
             <q-card-section class="text-h6 text-negative">
-              Внимание: Низкая разность между альтернативами
+              Внимание: найдена несущественная разность между альтернативами
             </q-card-section>
             <q-card-section>
               Найдены альтернативы, у которых d* меньше {{ minDifferenceThreshold }}:
@@ -152,33 +151,34 @@
           <q-btn label="ПОКАЗАТЬ ВСЕ" class="done-button" @click="handleDone" />
         </div>
 
-        <q-dialog v-model="showSensitivityDialog">
-          <q-card style="width: 500px; max-width: 90%;">
+        <q-dialog v-model="showSensitivitySetupDialog">
+          <q-card style="width: 400px; max-width: 90%;">
             <q-card-section class="text-h6 text-primary">
-              Анализ чувствительности
+              Настройка анализа чувствительности
             </q-card-section>
             <q-card-section>
-              <div v-if="sensitivityResults.length === 0">
-                Анализ чувствительности не выявил похожих альтернатив.
-              </div>
-              <div v-else>
-                <p>Сравнение альтернатив с учётом изменения коэффициента:</p>
-                <ul>
-                  <li v-for="(pair, index) in sensitivityResults" :key="index">
-                    {{ pair.alt1.internalFactor }} и {{ pair.alt1.externalFactor }} |
-                    {{ pair.alt2.internalFactor }} и {{ pair.alt2.externalFactor }} —
-                    <span v-if="pair.comparison === 0">равны</span>
-                    <span v-else-if="pair.comparison === 1">первая выше</span>
-                    <span v-else>вторая выше</span>
-                  </li>
-                </ul>
-              </div>
+              <q-input
+                v-model.number="deltaAlternative"
+                :label="`Δ альтернатив (максимум ${maxCloseness.toFixed(3)})`"
+                type="number"
+                :step="0.01"
+                :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= maxCloseness || 'Превышает максимум']"
+              />
+              <q-input
+                v-model.number="factorDistance"
+                label="Изменение параметров трапеций (максимум 0.99)"
+                type="number"
+                :step="0.01"
+                :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= 0.99 || 'Максимум 0.99']"
+              />
             </q-card-section>
             <q-card-actions align="right">
-              <q-btn flat label="Закрыть" v-close-popup />
+              <q-btn flat label="Отмена" v-close-popup />
+              <q-btn flat label="Анализировать" color="primary" @click="submitSensitivityConfig" />
             </q-card-actions>
           </q-card>
         </q-dialog>
+
 
         <q-dialog v-model="showSensitivityDialog">
           <q-card style="width: 500px; max-width: 90%;">
@@ -187,11 +187,28 @@
             </q-card-section>
             <q-card-section>
               <div v-if="sensitivityAnalysis.length === 0">Идёт анализ чувствительности...</div>
-              <ul v-else>
-                <li v-for="(entry, index) in sensitivityAnalysis" :key="index">
-                  {{ entry.description }}
-                </li>
-              </ul>
+              <q-markup-table dense flat bordered>
+                <thead>
+                <tr>
+                  <th>Сравнение альтернатив</th>
+                  <th>Левая альтернатива приоритетнее</th>
+                  <th>Одинаковы</th>
+                  <th>Правая альтернатива приоритетнее</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(entry, index) in sensitivityAnalysis" :key="index">
+                  <td>
+                    {{ `A${index + 1}(${entry.alt1.externalFactor} и ${entry.alt1.internalFactor}) vs A${index + 2}(${entry.alt2.externalFactor} и ${entry.alt2.internalFactor})` }}
+                  </td>
+                  <td>{{ entry.lesser }}</td>
+                  <td>{{ entry.equal }}</td>
+                  <td>{{ entry.greater }}</td>
+                </tr>
+                </tbody>
+              </q-markup-table>
+
+
             </q-card-section>
             <q-card-actions align="right">
               <q-btn flat label="Закрыть" color="primary" v-close-popup />
@@ -232,6 +249,44 @@ const lowDifferenceAlternatives = ref([])
 const showSensitivityDialog = ref(false)
 const sensitivityResults = ref([])
 const sensitivityAnalysis = ref([])
+
+const showSensitivitySetupDialog = ref(false)
+const deltaAlternative = ref(0)
+const factorDistance = ref(0)
+const maxCloseness = computed(() => {
+  return Math.max(...sortedAlternatives.value.map(a => a.closeness || 0))
+})
+
+const openSensitivitySetupDialog = () => {
+  deltaAlternative.value = 0
+  factorDistance.value = 0
+  showSensitivitySetupDialog.value = true
+}
+
+const submitSensitivityConfig = async () => {
+  showSensitivitySetupDialog.value = false
+  showSensitivityDialog.value = true
+  sensitivityAnalysis.value = []
+
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+  const token = localStorage.getItem('token')
+
+  try {
+    const { data } = await axios.post('http://localhost:8080/api/session/sensitivity-analysis', {
+      sessionId,
+      versionId,
+      delta: deltaAlternative.value,
+      factorDistance: factorDistance.value
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    sensitivityAnalysis.value = data
+  } catch (err) {
+    console.error('Ошибка при анализе чувствительности:', err)
+    sensitivityAnalysis.value = [{ description: 'Ошибка при анализе чувствительности' }]
+  }
+}
 
 const fetchFactors = async () => {
   try {

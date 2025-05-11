@@ -5,7 +5,13 @@
 
         <div class="flex items-center q-mb-md" style="width: 100%; max-width: 800px; justify-content: space-between;">
           <div class="text-h6" style="text-transform: uppercase; text-align: center; flex-grow: 1;">
-            <q-btn icon="arrow_back" class="justify-start row" flat @click="$router.go(-1)" />
+            <q-btn
+              icon="arrow_back"
+              class="justify-start row"
+              flat
+              @click="$router.push(`/history/${sessionId}`)"
+            />
+
             {{ sessionName }}
           </div>
         </div>
@@ -202,10 +208,10 @@ const lowDifferenceAlternatives = ref([])
 const showSensitivityDialog = ref(false)
 const sensitivityResults = ref([])
 const sensitivityAnalysis = ref([])
+const sessionId = localStorage.getItem('sessionId')
 
 const fetchFactors = async () => {
   try {
-    const sessionId = localStorage.getItem('sessionId')
     const versionId = localStorage.getItem('versionId')
     const token = localStorage.getItem('token')
     const response = await axios.get(`http://localhost:8080/api/v1/factors?sessionId=${sessionId}&versionId=${versionId}`, {
