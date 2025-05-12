@@ -71,6 +71,7 @@
         <div class="q-mt-md row q-gutter-md">
           <q-btn label="РЕЗУЛЬТАТЫ" class="done-button" @click="finishSession" />
           <q-btn
+            v-if="sortedAlternatives.length > 1"
             label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
             class="done-button"
             color="warning"
@@ -205,11 +206,11 @@
                 <tr v-for="(entry, index) in sensitivityAnalysis" :key="index" class="text-center">
                   <td>
                     <div class="alt-label">
-                      A{{ index + 1 }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }})
+                      A{{ entry.alt1.prioritization }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }})
                     </div>
                     <div class="vs-label">vs</div>
                     <div class="alt-label">
-                      A{{ index + 2 }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }})
+                      A{{ entry.alt2.prioritization }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }})
                     </div>
                   </td>
                   <td>{{ entry.lesser }}</td>

@@ -16,6 +16,16 @@
           </div>
         </div>
 
+        <div>
+          <q-btn
+            label="СОЗДАТЬ НОВУЮ ВЕРСИЮ"
+            class="done-button"
+            color="blocks"
+            icon="post_add"
+            @click="createNewVersion"
+          />
+        </div>
+
         <div class="grid-analysis q-mt-md" style="align-items: center; justify-content: center">
           <!-- ФАКТОРЫ -->
           <div class="cell strong bg-light-red" ref="strongCell">
@@ -73,11 +83,13 @@
             @click="downloadResultsPdf"
           />
           <q-btn
+            v-if="sortedAlternatives.length > 1"
             label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
             class="done-button"
             color="warning"
             @click="openSensitivitySetupDialog"
           />
+
         </div>
 
 
@@ -124,31 +136,7 @@
             </q-card-actions>
           </q-card>
         </q-dialog>
-
-        <q-dialog v-model="showWarningDialog" persistent>
-          <q-card style="width: 400px; max-width: 90%;">
-            <q-card-section class="text-h6 text-negative">
-              Внимание: найдена несущественная разность между альтернативами
-            </q-card-section>
-            <q-card-section>
-              Найдены альтернативы, у которых d* меньше {{ minDifferenceThreshold }}:
-              <ul>
-                <li v-for="(pair, i) in lowDifferenceAlternatives" :key="i">
-                  A{{ pair[0] + 1 }} и A{{ pair[1] + 1 }} — Δ = {{
-                    (sortedAlternatives[pair[0]]?.closeness != null &&
-                      sortedAlternatives[pair[1]]?.closeness != null)
-                      ? Math.abs(sortedAlternatives[pair[0]].closeness - sortedAlternatives[pair[1]].closeness).toFixed(3)
-                      : 'нет данных'
-                  }}
-                </li>
-              </ul>
-            </q-card-section>
-            <q-card-actions align="right">
-              <q-btn flat label="ОК" color="primary" v-close-popup />
-            </q-card-actions>
-          </q-card>
-
-        </q-dialog><q-dialog v-model="showSensitivitySetupDialog">
+ <q-dialog v-model="showSensitivitySetupDialog">
         <q-card style="width: 400px; max-width: 90%;">
           <q-card-section class="text-h6 text-primary">
             Настройка анализа чувствительности
@@ -197,11 +185,11 @@
                 <tr v-for="(entry, index) in sensitivityAnalysis" :key="index" class="text-center">
                   <td>
                     <div class="alt-label">
-                      A{{ index + 1 }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }})
+                      A{{ entry.alt1.prioritization }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }})
                     </div>
                     <div class="vs-label">vs</div>
                     <div class="alt-label">
-                      A{{ index + 2 }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }})
+                      A{{ entry.alt2.prioritization }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }})
                     </div>
                   </td>
                   <td>{{ entry.lesser }}</td>
@@ -266,6 +254,36 @@ const maxCloseness = computed(() => {
 const sensitivityResults = ref([])
 const sensitivityAnalysis = ref([])
 const sessionId = localStorage.getItem('sessionId')
+
+const createNewVersion = async () => {
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+  const token = localStorage.getItem('token')
+
+  try {
+    const { data } = await axios.post('http://localhost:8080/v1/session/version/create-from-current', {
+      sessionId,
+      baseVersionId: versionId
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    // Сохраняем новую версию в localStorage
+    localStorage.setItem('versionId', data.newVersionId)
+
+    // Переход на страницу /session/factors
+    router.push('/session/factors')
+
+  } catch (error) {
+    console.error('Ошибка при создании новой версии:', error)
+    this.$q.notify({
+      color: 'negative',
+      message: 'Ошибка при создании версии',
+      position: 'top-right'
+    })
+  }
+}
+
 
 const fetchFactors = async () => {
   try {
@@ -343,7 +361,7 @@ const handleDone = async () => {
   const sessionId = localStorage.getItem('sessionId')
   const versionId = localStorage.getItem('versionId')
 
-  const { data } = await axios.get(`http://localhost:8080/v1/session/alternatives`, {
+  const { data } = await axios.get(`http://localhost:8080/v1/session/result/alternatives`, {
     headers: { Authorization: `Bearer ${token}` },
     params: { sessionId, versionId }
   })
