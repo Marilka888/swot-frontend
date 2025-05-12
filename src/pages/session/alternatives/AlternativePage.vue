@@ -148,7 +148,12 @@
         </q-dialog>
 
         <div class="q-mt-md row justify-end">
-          <q-btn label="ПОКАЗАТЬ ВСЕ" class="done-button" @click="handleDone" />
+          <q-btn
+            label="ПОКАЗАТЬ ВСЕ"
+            class="done-button"
+            :disable="isHandleDoneClicked"
+            @click="handleDone"
+          />
         </div>
 
         <q-dialog v-model="showSensitivitySetupDialog">
@@ -238,7 +243,6 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
-
 const sessionName = ref('Название сессии')
 const tab = ref('alternatives')
 const router = useRouter()
@@ -284,9 +288,8 @@ const downloadSensitivityPdf = () => {
   const delta = deltaAlternative.value ?? 0
   const distance = factorDistance.value ?? 0
 
-  const url = `http://localhost:8080/v1/sessions/sensitivity-analysis/pdf?sessionId=${sessionId}&versionId=${versionId}&delta=${delta}&factorDistance=${distance}`
-
-  window.open(url, '_blank')
+  const url = `http://localhost:8080/api/session/sensitivity-analysis/pdf?sessionId=${sessionId}&versionId=${versionId}&delta=${delta}&factorDistance=${distance}`;
+  window.open(url, '_blank');
 }
 
 const submitSensitivityConfig = async () => {
@@ -340,8 +343,12 @@ const fetchAlternatives = async () => {
   })
   previousAlternatives.value = data
 }
+const isHandleDoneClicked = ref(false)
 
 const handleDone = async () => {
+  if (isHandleDoneClicked.value) return
+  isHandleDoneClicked.value = true
+
   const token = localStorage.getItem('token')
   const sessionId = localStorage.getItem('sessionId')
   const versionId = localStorage.getItem('versionId')

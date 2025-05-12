@@ -161,22 +161,80 @@
           </q-card>
         </q-dialog>
 
-        <q-dialog v-model="showSensitivityDialog">
-          <q-card style="width: 500px; max-width: 90%;">
-            <q-card-section>
-              <div class="text-h6 text-orange-8">Анализ чувствительности</div>
+        <q-dialog v-model="showSensitivitySetupDialog">
+          <q-card style="width: 400px; max-width: 90%;">
+            <q-card-section class="text-h6 text-primary">
+              Настройка анализа чувствительности
             </q-card-section>
             <q-card-section>
-              <div v-if="sensitivityAnalysis.length === 0">Идёт анализ чувствительности...</div>
-              <ul v-else>
-                <li v-for="(entry, index) in sensitivityAnalysis" :key="index">
-                  {{ entry.description }}
-                </li>
-              </ul>
+              <q-input
+                v-model.number="deltaAlternative"
+                :label="`Δ альтернатив (максимум ${maxCloseness.toFixed(3)})`"
+                type="number"
+                :step="0.001"
+                :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= maxCloseness || 'Превышает максимум']"
+              />
+              <q-input
+                v-model.number="factorDistance"
+                label="Изменение параметров трапеций (максимум 0.99)"
+                type="number"
+                :step="0.01"
+                :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= 0.99 || 'Максимум 0.99']"
+              />
             </q-card-section>
             <q-card-actions align="right">
-              <q-btn flat label="Закрыть" color="primary" v-close-popup />
+              <q-btn flat label="Отмена" v-close-popup />
+              <q-btn flat label="Анализировать" color="primary" @click="submitSensitivityConfig" />
             </q-card-actions>
+          </q-card>
+        </q-dialog>
+
+        <q-dialog v-model="showSensitivityDialog" persistent>
+          <q-card style="width: auto; min-width: 800px; max-width: 95vw;">
+            <q-card-section class="text-h6 text-primary">
+              Анализ чувствительности
+            </q-card-section>
+
+            <q-card-section>
+              <q-markup-table flat bordered dense style="width: 100%">
+                <thead>
+                <tr class="text-center">
+                  <th style="width: 40%">Сравнение альтернатив</th>
+                  <th>Левая приоритетнее</th>
+                  <th>Одинаковы</th>
+                  <th>Правая приоритетнее</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(entry, index) in sensitivityAnalysis" :key="index" class="text-center">
+                  <td>
+                    <div class="alt-label">
+                      A{{ index + 1 }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }})
+                    </div>
+                    <div class="vs-label">vs</div>
+                    <div class="alt-label">
+                      A{{ index + 2 }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }})
+                    </div>
+                  </td>
+                  <td>{{ entry.lesser }}</td>
+                  <td>{{ entry.equal }}</td>
+                  <td>{{ entry.greater }}</td>
+                </tr>
+                </tbody>
+              </q-markup-table>
+            </q-card-section>
+
+            <q-card-actions align="right">
+              <q-btn
+                flat
+                icon="picture_as_pdf"
+                label="Выгрузить PDF"
+                color="primary"
+                @click="downloadSensitivityPdf"
+              />
+              <q-btn flat label="Закрыть" v-close-popup />
+            </q-card-actions>
+
           </q-card>
         </q-dialog>
       </q-page>
@@ -205,12 +263,18 @@ const showAltDialog = ref(false)
 const selectedAlt = ref(null)
 const selectedAltReveal = ref({ internal: 100, external: 100 })
 const revealMap = ref({})
+const showSensitivityDialog = ref(false)
 
 const alternativeDifference = ref(parseFloat(localStorage.getItem('alternativeDifference') || '0.15'))
 const minDifferenceThreshold = alternativeDifference
 const showWarningDialog = ref(false)
 const lowDifferenceAlternatives = ref([])
-const showSensitivityDialog = ref(false)
+const showSensitivitySetupDialog = ref(false)
+const deltaAlternative = ref(0)
+const factorDistance = ref(0)
+const maxCloseness = computed(() => {
+  return Math.max(...sortedAlternatives.value.map(a => a.closeness || 0))
+})
 const sensitivityResults = ref([])
 const sensitivityAnalysis = ref([])
 const sessionId = localStorage.getItem('sessionId')
@@ -237,6 +301,17 @@ const downloadResultsPdf = () => {
 
   const url = `http://localhost:8080/v1/sessions/results/pdf?sessionId=${sessionId}&versionId=${versionId}`
   window.open(url, '_blank')
+}
+
+const downloadSensitivityPdf = () => {
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+
+  const delta = deltaAlternative.value ?? 0
+  const distance = factorDistance.value ?? 0
+
+  const url = `http://localhost:8080/api/session/sensitivity-analysis/pdf?sessionId=${sessionId}&versionId=${versionId}&delta=${delta}&factorDistance=${distance}`;
+  window.open(url, '_blank');
 }
 
 const fetchAlternatives = async () => {
