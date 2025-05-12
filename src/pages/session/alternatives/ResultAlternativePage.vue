@@ -76,7 +76,7 @@
             label="АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ"
             class="done-button"
             color="warning"
-            @click="openSensitivityDialog"
+            @click="openSensitivitySetupDialog"
           />
         </div>
 
@@ -108,10 +108,27 @@
 
 
 
+        <q-dialog v-model="showAltDialog">
+          <q-card style="width: 400px; max-width: 90%">
+            <q-card-section>
+              <div class="text-h6">Настройка альтернативы</div>
+              <div>{{ selectedAlt?.internalFactor }} и {{ selectedAlt?.externalFactor }}</div>
+            </q-card-section>
+            <q-card-section>
+              <q-input v-model.number="selectedAltReveal.internal" type="number" label="% раскрытия внутреннего фактора" :rules="[val => val >= 0 && val <= 100 || 'Допустимо от 0 до 100']" />
+              <q-input v-model.number="selectedAltReveal.external" type="number" label="% раскрытия внешнего фактора" :rules="[val => val >= 0 && val <= 100 || 'Допустимо от 0 до 100']" />
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Отмена" v-close-popup />
+              <q-btn flat label="Сохранить" color="primary" @click="saveRevealPercentages" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
         <q-dialog v-model="showWarningDialog" persistent>
           <q-card style="width: 400px; max-width: 90%;">
             <q-card-section class="text-h6 text-negative">
-              Внимание: Низкая разность между альтернативами
+              Внимание: найдена несущественная разность между альтернативами
             </q-card-section>
             <q-card-section>
               Найдены альтернативы, у которых d* меньше {{ minDifferenceThreshold }}:
@@ -119,9 +136,9 @@
                 <li v-for="(pair, i) in lowDifferenceAlternatives" :key="i">
                   A{{ pair[0] + 1 }} и A{{ pair[1] + 1 }} — Δ = {{
                     (sortedAlternatives[pair[0]]?.closeness != null &&
-                        sortedAlternatives[pair[1]]?.closeness != null)
-                        ? Math.abs(sortedAlternatives[pair[0]].closeness - sortedAlternatives[pair[1]].closeness).toFixed(3)
-                        : 'нет данных'
+                      sortedAlternatives[pair[1]]?.closeness != null)
+                      ? Math.abs(sortedAlternatives[pair[0]].closeness - sortedAlternatives[pair[1]].closeness).toFixed(3)
+                      : 'нет данных'
                   }}
                 </li>
               </ul>
@@ -131,63 +148,34 @@
             </q-card-actions>
           </q-card>
 
-        </q-dialog>
+        </q-dialog><q-dialog v-model="showSensitivitySetupDialog">
+        <q-card style="width: 400px; max-width: 90%;">
+          <q-card-section class="text-h6 text-primary">
+            Настройка анализа чувствительности
+          </q-card-section>
+          <q-card-section>
+            <q-input
+              v-model.number="deltaAlternative"
+              :label="`Δ альтернатив (максимум ${maxCloseness.toFixed(3)})`"
+              type="number"
+              :step="0.001"
+              :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= maxCloseness || 'Превышает максимум']"
+            />
+            <q-input
+              v-model.number="factorDistance"
+              label="Изменение параметров трапеций (максимум 0.99)"
+              type="number"
+              :step="0.01"
+              :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= 0.99 || 'Максимум 0.99']"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Отмена" v-close-popup />
+            <q-btn flat label="Анализировать" color="primary" @click="submitSensitivityConfig" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
 
-        <q-dialog v-model="showSensitivityDialog">
-          <q-card style="width: 500px; max-width: 90%;">
-            <q-card-section class="text-h6 text-primary">
-              Анализ чувствительности
-            </q-card-section>
-            <q-card-section>
-              <div v-if="sensitivityResults.length === 0">
-                Анализ чувствительности не выявил похожих альтернатив.
-              </div>
-              <div v-else>
-                <p>Сравнение альтернатив с учётом изменения коэффициента:</p>
-                <ul>
-                  <li v-for="(pair, index) in sensitivityResults" :key="index">
-                    {{ pair.alt1.internalFactor }} и {{ pair.alt1.externalFactor }} |
-                    {{ pair.alt2.internalFactor }} и {{ pair.alt2.externalFactor }} —
-                    <span v-if="pair.comparison === 0">равны</span>
-                    <span v-else-if="pair.comparison === 1">первая выше</span>
-                    <span v-else>вторая выше</span>
-                  </li>
-                </ul>
-              </div>
-            </q-card-section>
-            <q-card-actions align="right">
-              <q-btn flat label="Закрыть" v-close-popup />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
-
-        <q-dialog v-model="showSensitivitySetupDialog">
-          <q-card style="width: 400px; max-width: 90%;">
-            <q-card-section class="text-h6 text-primary">
-              Настройка анализа чувствительности
-            </q-card-section>
-            <q-card-section>
-              <q-input
-                v-model.number="deltaAlternative"
-                :label="`Δ альтернатив (максимум ${maxCloseness.toFixed(3)})`"
-                type="number"
-                :step="0.001"
-                :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= maxCloseness || 'Превышает максимум']"
-              />
-              <q-input
-                v-model.number="factorDistance"
-                label="Изменение параметров трапеций (максимум 0.99)"
-                type="number"
-                :step="0.01"
-                :rules="[val => val >= 0 || 'Не может быть < 0', val => val <= 0.99 || 'Максимум 0.99']"
-              />
-            </q-card-section>
-            <q-card-actions align="right">
-              <q-btn flat label="Отмена" v-close-popup />
-              <q-btn flat label="Анализировать" color="primary" @click="submitSensitivityConfig" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
 
         <q-dialog v-model="showSensitivityDialog" persistent>
           <q-card style="width: auto; min-width: 800px; max-width: 95vw;">
@@ -302,7 +290,11 @@ const downloadResultsPdf = () => {
   const url = `http://localhost:8080/v1/sessions/results/pdf?sessionId=${sessionId}&versionId=${versionId}`
   window.open(url, '_blank')
 }
-
+const openSensitivitySetupDialog = () => {
+  deltaAlternative.value = 0
+  factorDistance.value = 0
+  showSensitivitySetupDialog.value = true
+}
 const downloadSensitivityPdf = () => {
   const sessionId = localStorage.getItem('sessionId')
   const versionId = localStorage.getItem('versionId')
@@ -313,7 +305,30 @@ const downloadSensitivityPdf = () => {
   const url = `http://localhost:8080/api/session/sensitivity-analysis/pdf?sessionId=${sessionId}&versionId=${versionId}&delta=${delta}&factorDistance=${distance}`;
   window.open(url, '_blank');
 }
+const submitSensitivityConfig = async () => {
+  showSensitivitySetupDialog.value = false
+  showSensitivityDialog.value = true
+  sensitivityAnalysis.value = []
 
+  const sessionId = localStorage.getItem('sessionId')
+  const versionId = localStorage.getItem('versionId')
+  const token = localStorage.getItem('token')
+
+  try {
+    const { data } = await axios.post('http://localhost:8080/api/session/sensitivity-analysis', {
+      sessionId,
+      versionId,
+      delta: deltaAlternative.value,
+      factorDistance: factorDistance.value
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    sensitivityAnalysis.value = data
+  } catch (err) {
+    console.error('Ошибка при анализе чувствительности:', err)
+    sensitivityAnalysis.value = [{ description: 'Ошибка при анализе чувствительности' }]
+  }
+}
 const fetchAlternatives = async () => {
   const selectedFromStorage = JSON.parse(localStorage.getItem('selectedFactors') || '[]')
   const token = localStorage.getItem('token')
