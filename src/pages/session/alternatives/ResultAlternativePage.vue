@@ -176,25 +176,29 @@
                 <thead>
                 <tr class="text-center">
                   <th style="width: 40%">Сравнение альтернатив</th>
-                  <th>Левая приоритетнее</th>
+                  <th>Альт.1 приоритетнее</th>
+                  <th>Наибольшее отклонение</th>
                   <th>Одинаковы</th>
-                  <th>Правая приоритетнее</th>
+                  <th>Альт.2 приоритетнее</th>
+                  <th>Наибольшее отклонение</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr v-for="(entry, index) in sensitivityAnalysis" :key="index" class="text-center">
                   <td>
                     <div class="alt-label">
-                      A{{ entry.alt1.prioritization }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }})
+                      A{{ entry.alt1.prioritization }}({{ entry.alt1.externalFactor }} и {{ entry.alt1.internalFactor }}) Альт.1
                     </div>
                     <div class="vs-label">vs</div>
                     <div class="alt-label">
-                      A{{ entry.alt2.prioritization }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }})
+                      A{{ entry.alt2.prioritization }}({{ entry.alt2.externalFactor }} и {{ entry.alt2.internalFactor }}) Альт.2
                     </div>
                   </td>
                   <td>{{ entry.lesser }}</td>
+                  <td>{{ entry.maxLesserRejection }}</td>
                   <td>{{ entry.equal }}</td>
                   <td>{{ entry.greater }}</td>
+                  <td>{{ entry.maxGreaterRejection }}</td>
                 </tr>
                 </tbody>
               </q-markup-table>
