@@ -102,6 +102,19 @@
                 {{ alt.internalFactor }} и {{ alt.externalFactor }}
               </div>
             </div>
+            <q-btn
+              v-if="hasRevealOverride(alt) && recal"
+              flat
+              dense
+              icon="visibility"
+              color="primary"
+              size="sm"
+              label="Сравнить"
+              class="q-ml-sm"
+              @click="openComparisonDialog(alt)"
+            />
+
+
             <q-btn flat dense icon="edit" @click="openAltDialog(alt)" class="q-ml-sm" />
           </div>
         </div>
@@ -216,10 +229,10 @@
                     </div>
                   </td>
                   <td>{{ entry.lesser }}</td>
-                  <td>{{ entry.maxLesserRejection }}</td>
+                  <td>{{ entry.maxLesserRejection === 0 ? 0 : Number(entry.maxLesserRejection).toFixed(6) }}</td>
                   <td>{{ entry.equal }}</td>
                   <td>{{ entry.greater }}</td>
-                  <td>{{ entry.maxGreaterRejection }}</td>
+                  <td>{{ entry.maxGreaterRejection === 0 ? 0 : Number(entry.maxGreaterRejection).toFixed(6) }}</td>
                 </tr>
                 </tbody>
               </q-markup-table>
@@ -236,6 +249,31 @@
               <q-btn flat label="Закрыть" v-close-popup />
             </q-card-actions>
 
+          </q-card>
+        </q-dialog>
+        <q-dialog v-model="showComparisonDialog">
+          <q-card style="width: 700px; max-width: 90vw">
+            <q-card-section class="text-h6 text-primary">
+              Сравнение альтернатив
+            </q-card-section>
+            <q-card-section>
+              <div class="row q-col-gutter-md">
+                <div
+                  v-for="(alt, idx) in [originalAlt, changedAlt]"
+                  :key="idx"
+                  :class="['q-pa-xl', 'col', idx === 1 ? 'bg-yellow-2' : 'bg-white']"
+                >
+                  <div><strong>Альтернатива {{ idx === 0 ? 'исходная' : 'изменённая' }}</strong></div>
+                  <div class="q-mt-sm">d+ = {{ alt.dplus?.toFixed(3) }}</div>
+                  <div>d- = {{ alt.dminus?.toFixed(3) }}</div>
+                  <div>d* = {{ alt.closeness?.toFixed(3) }}</div>
+                  <div class="q-mt-sm">{{ alt.internalFactor }} и {{ alt.externalFactor }}</div>
+                </div>
+              </div>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Закрыть" v-close-popup />
+            </q-card-actions>
           </q-card>
         </q-dialog>
 
@@ -279,6 +317,25 @@ const factorDistance = ref(0)
 const maxCloseness = computed(() => {
   return Math.max(...sortedAlternatives.value.map(a => a.closeness || 0))
 })
+const showComparisonDialog = ref(false)
+const originalAlt = ref(null)
+const changedAlt = ref(null)
+
+const hasRevealOverride = (alt) => {
+  const key = `${alt.internalFactor}|${alt.externalFactor}`
+  const override = revealMap.value[key]
+  return override && (override.internal !== 100 || override.external !== 100)
+}
+
+const openComparisonDialog = (alt) => {
+  const original = previousAlternatives.value.find(a =>
+    a.internalFactor === alt.internalFactor && a.externalFactor === alt.externalFactor
+  )
+
+  changedAlt.value = { ...alt }
+  originalAlt.value = original ? { ...original } : { dplus: null, dminus: null, closeness: null, internalFactor: alt.internalFactor, externalFactor: alt.externalFactor }
+  showComparisonDialog.value = true
+}
 
 const openSensitivitySetupDialog = () => {
   deltaAlternative.value = 0
@@ -363,6 +420,7 @@ const handleDone = async () => {
     params: { sessionId, versionId }
   })
 
+  previousAlternatives.value = data
   alternatives.value = data
   showAll.value = true
   updateLowDifferenceAlternatives()
@@ -397,11 +455,11 @@ const saveRevealPercentages = () => {
   showAltDialog.value = false
 }
 
+let recal = false;
 const recalculateAlternatives = async () => {
   const sessionId = localStorage.getItem('sessionId')
   const versionId = localStorage.getItem('versionId')
   const token = localStorage.getItem('token')
-
   const revealArray = Object.entries(revealMap.value).map(([key, value]) => {
     const [internal, external] = key.split('|')
     return {
@@ -418,6 +476,7 @@ const recalculateAlternatives = async () => {
     const { data } = await axios.post('http://localhost:8080/api/session/recalculate', payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
+    recal = true
     console.log('Ответ от бэкенда:', data)
     alternatives.value = data
     showAll.value = true

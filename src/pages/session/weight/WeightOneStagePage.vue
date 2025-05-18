@@ -205,23 +205,41 @@ const openWeightDialog = (type) => {
 }
 
 const saveWeights = async () => {
+  const isValid = currentFactors.value.every(f => {
+    const r1min = f.range1.min;
+    const r1max = f.range1.max;
+    const r2min = f.range2.min;
+    const r2max = f.range2.max;
+
+    const range1InsideRange2 = r1min >= r2min && r1max <= r2max;
+    const equalPoints = r1min === r1max && r2min === r2max && r1min === r2min;
+
+    return range1InsideRange2 || equalPoints;
+  });
+
+  if (!isValid) {
+    alert('Ошибка: диапазон крaйних значений должен входить в наиболее возможные.');
+    return;
+  }
+
   try {
     currentFactors.value = currentFactors.value.map(f => ({
       ...f,
       id: f.id,
-      weightMin: f.range1[0],
-      weightMax: f.range1[1],
-      weightAvg1: f.range2[0],
-      weightAvg2: f.range2[1]
-    }))
+      weightMin: f.range1.min,
+      weightMax: f.range1.max,
+      weightAvg1: f.range2.min,
+      weightAvg2: f.range2.max
+    }));
 
-    await axios.post(`http://localhost:8080/api/v1/factors/${currentFactorType.value}`, currentFactors.value)
-    showWeightDialog.value = false
-    await fetchFactors()
+    await axios.post(`http://localhost:8080/api/v1/factors/${currentFactorType.value}`, currentFactors.value);
+    showWeightDialog.value = false;
+    await fetchFactors();
   } catch (err) {
-    console.error('Ошибка при сохранении весов:', err)
+    console.error('Ошибка при сохранении весов:', err);
   }
-}
+};
+
 
 const adjustCellHeights = () => {
   if (strongCell.value && weakCell.value && opportunityCell.value && threatCell.value) {

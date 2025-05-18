@@ -195,10 +195,10 @@
                     </div>
                   </td>
                   <td>{{ entry.lesser }}</td>
-                  <td>{{ entry.maxLesserRejection }}</td>
+                  <td>{{ entry.maxLesserRejection === 0 ? 0 : Number(entry.maxLesserRejection).toFixed(6) }}</td>
                   <td>{{ entry.equal }}</td>
                   <td>{{ entry.greater }}</td>
-                  <td>{{ entry.maxGreaterRejection }}</td>
+                  <td>{{ entry.maxGreaterRejection === 0 ? 0 : Number(entry.maxGreaterRejection).toFixed(6) }}</td>
                 </tr>
                 </tbody>
               </q-markup-table>
